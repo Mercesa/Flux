@@ -36,6 +36,9 @@
     <ClCompile Include="..\External\SPIRV-Reflect-master\spirv_reflect.c">
       <Filter>External\SpirvReflect</Filter>
     </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Resources\Shaders\basic.frag">
@@ -51,6 +54,9 @@
     </ClInclude>
     <ClInclude Include="Reflection.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
