@@ -26,8 +26,7 @@
 
 #include <vk_mem_alloc.h>
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
+
 
 #include "Reflection.h"
 
@@ -52,6 +51,12 @@ namespace Flux
 	class Renderer
 	{
 	public:
+
+		void Init();
+		void WaitIdle();
+		void Draw();
+		void SetWindow(GLFWwindow* aWindow);
+
 
 		struct QueueFamilyIndices {
 			std::optional<uint32_t> graphicsFamily;
@@ -136,13 +141,11 @@ namespace Flux
 
 
 		void run() {
-			initWindow();
-			initVulkan();
-			mainLoop();
+			InitVulkan();
+			MainLoop();
 			Cleanup();
 		}
 
-		GLFWwindow* window;
 
 		const std::vector<Vertex> vertices = {
 			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
@@ -161,24 +164,26 @@ namespace Flux
 		4, 5, 6, 6, 7, 4
 		};
 
+		VmaAllocator memoryAllocator;
+
 		VkImage textureImage;
-		VkDeviceMemory textureImageMemory;
+		VmaAllocation textureImageMemory;
 		VkSampler textureSampler;
 
 		VkImage depthImage;
-		VkDeviceMemory depthImageMemory;
+		VmaAllocation depthImageMemory;
 		VkImageView depthImageView;
 
 		VkBuffer vertexBuffer;
-		VkDeviceMemory vertexBufferMemory;
+		VmaAllocation vertexBufferMemory;
 		VkBuffer indexBuffer;
-		VkDeviceMemory indexBufferMemory;
+		VmaAllocation indexBufferMemory;
 
 		VkDescriptorPool descriptorPool;
 		std::vector<VkDescriptorSet> descriptorSets;
 
 		std::vector<VkBuffer> uniformBuffers;
-		std::vector<VkDeviceMemory> uniformBuffersMemory;
+		std::vector<VmaAllocation> uniformBuffersMemory;
 
 		VkInstance instance;
 		VkDebugUtilsMessengerEXT debugMessenger;
@@ -190,7 +195,7 @@ namespace Flux
 		VkQueue graphicsQueue;
 		VkQueue presentQueue;
 
-		VkSwapchainKHR swapChain;
+		VkSwapchainKHR swapChain; 
 		std::vector<VkImage> swapChainImages;
 		VkFormat swapChainImageFormat;
 		VkExtent2D swapChainExtent;
@@ -216,17 +221,11 @@ namespace Flux
 
 		bool framebufferResized = false;
 
+	private:
 
-		void initWindow();
+		void InitVulkan();
 
-		static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-			auto app = reinterpret_cast<Renderer*>(glfwGetWindowUserPointer(window));
-			app->framebufferResized = true;
-		}
-
-		void initVulkan();
-
-		void mainLoop();
+		void MainLoop();
 
 		void CleanupSwapChain();
 
@@ -262,9 +261,9 @@ namespace Flux
 
 		void CreateCommandPool();
 
-		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage properties, VkBuffer& buffer, VmaAllocation& bufferMemory);
 
-		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage properties, VkImage& image, VmaAllocation& imageMemory);
 
 		VkCommandBuffer BeginSingleTimeCommands();
 
@@ -295,15 +294,14 @@ namespace Flux
 		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-		
+
 		void CreateCommandBuffers();
 
 		void CreateSyncObjects();
 
-		void DrawFrame();
 
 		void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-		
+
 		void UpdateUniformBuffer(uint32_t currentImage);
 
 		VkShaderModule createShaderModule(const std::vector<char>& code);
@@ -321,7 +319,8 @@ namespace Flux
 		bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
 		QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-		
+
+		GLFWwindow* mWindow;
 
 		std::vector<const char*> getRequiredExtensions() {
 			uint32_t glfwExtensionCount = 0;

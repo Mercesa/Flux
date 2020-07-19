@@ -1,11 +1,12 @@
-#include "Renderer/Renderer.h"
+#include "Renderer/Application.h"
 
+#include <iostream>
 
 int main() {
-    Flux::Renderer app;
+    Flux::Application app;
 
     try {
-        app.run();
+        app.Run();
     }
     catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
