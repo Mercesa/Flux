@@ -59,7 +59,7 @@ void character_callback(GLFWwindow* window, unsigned int codepoint)
 void Flux::Application::Run()
 {
 	mInput = std::make_shared<Input>();
-	mCamera = std::make_shared<Camera>();
+	mCamera = std::make_shared<Camera>(glm::vec3(0.0f, 5.0f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), YAW, -45.0f);
 
 
 	glfwInit();
@@ -82,19 +82,19 @@ void Flux::Application::Run()
 		
 		if (mInput->GetKeyHeld(GLFW_KEY_W))
 		{
-			mCamera->ProcessKeyboard(Flux::Camera_Movement::FORWARD, 0.001f);
+			mCamera->ProcessKeyboard(Flux::Camera_Movement::FORWARD, 0.1f);
 		}
 		else if (mInput->GetKeyHeld(GLFW_KEY_A))
 		{
-			mCamera->ProcessKeyboard(Flux::Camera_Movement::LEFT, 0.001f);
+			mCamera->ProcessKeyboard(Flux::Camera_Movement::LEFT, 0.1f);
 		}
 		else if (mInput->GetKeyHeld(GLFW_KEY_S))
 		{
-			mCamera->ProcessKeyboard(Flux::Camera_Movement::BACKWARD, 0.001f);
+			mCamera->ProcessKeyboard(Flux::Camera_Movement::BACKWARD, 0.1f);
 		}
 		else if (mInput->GetKeyHeld(GLFW_KEY_D))
 		{
-			mCamera->ProcessKeyboard(Flux::Camera_Movement::RIGHT, 0.001f);
+			mCamera->ProcessKeyboard(Flux::Camera_Movement::RIGHT, 0.1f);
 		}
 
 		mRenderer->Draw();
