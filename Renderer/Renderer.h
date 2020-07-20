@@ -1,9 +1,6 @@
 #pragma once
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-
-
-
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
@@ -26,9 +23,8 @@
 
 #include <vk_mem_alloc.h>
 
-
-
 #include "Reflection.h"
+
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -48,10 +44,11 @@ const bool enableValidationLayers = true;
 
 namespace Flux
 {
+	class Camera;
 	class Renderer
 	{
 	public:
-
+		Renderer(std::shared_ptr<Camera> aCamera);
 		void Init();
 		void WaitIdle();
 		void Draw();
@@ -220,6 +217,8 @@ namespace Flux
 		VkImageView textureImageView;
 
 		bool framebufferResized = false;
+
+		std::shared_ptr<Camera> mCamera;
 
 	private:
 
