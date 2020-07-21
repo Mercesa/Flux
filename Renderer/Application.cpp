@@ -83,9 +83,7 @@ void Flux::Application::Run()
 	
 	while (!glfwWindowShouldClose(mWindow)) {
 
-		tDeltaTime = tTimer->GetDelta() / 1000.0f;
-		//std::cout << tDeltaTime/1000.0f << std::endl;
-		printf("%d \n", tDeltaTime);
+		tDeltaTime = tTimer->GetDelta() * 0.0001f;
 		glfwPollEvents();
 		
 		if (mInput->GetKeyHeld(GLFW_KEY_W))
