@@ -154,12 +154,19 @@
     <ClCompile Include="..\Main.cpp" />
     <ClCompile Include="..\Timer.cpp" />
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="BasicGeometry.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Resources\Shaders\basic.frag" />
     <None Include="..\Resources\Shaders\basic.vert" />
+    <None Include="..\Resources\Shaders\cube.frag" />
+    <None Include="..\Resources\Shaders\cube.vert" />
+    <None Include="..\Resources\Shaders\sphere.frag" />
+    <None Include="..\Resources\Shaders\sphere.vert" />
+    <None Include="..\Resources\Shaders\triangle.frag" />
+    <None Include="..\Resources\Shaders\triangle.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\External\SPIRV-Reflect-master\spirv_reflect.h" />
@@ -168,6 +175,7 @@
     <ClInclude Include="..\Timer.h" />
     <ClInclude Include="Application.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="BasicGeometry.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="Reflection.h" />
     <ClInclude Include="Renderer.h" />

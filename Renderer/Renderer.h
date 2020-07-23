@@ -26,6 +26,8 @@
 #include "Reflection.h"
 
 
+#include "BasicGeometry.h"
+
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 const std::vector<const char*> validationLayers = {
@@ -72,50 +74,8 @@ namespace Flux
 
 		struct UniformBufferObject
 		{
-			glm::mat4 model;
 			glm::mat4 view;
 			glm::mat4 projection;
-		};
-
-		struct Vertex {
-			glm::vec3 pos;
-			glm::vec3 color;
-			glm::vec2 texCoord;
-
-			// Create vertex binding description for this vertex
-			static VkVertexInputBindingDescription GetBindingDescription()
-			{
-				VkVertexInputBindingDescription bindingDescription{};
-				bindingDescription.binding = 0;
-				bindingDescription.stride = sizeof(Vertex);
-				bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-				return bindingDescription;
-			}
-
-			// This describes the formats of the bindings, where they are bound, etc
-			static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions()
-			{
-				std::array<VkVertexInputAttributeDescription, 3> vertexAttrDescriptions{};
-
-				vertexAttrDescriptions[0].binding = 0;
-				vertexAttrDescriptions[0].location = 0;
-				vertexAttrDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-				vertexAttrDescriptions[0].offset = offsetof(Vertex, pos);
-
-				vertexAttrDescriptions[1].binding = 0;
-				vertexAttrDescriptions[1].location = 1;
-				vertexAttrDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-				vertexAttrDescriptions[1].offset = offsetof(Vertex, color);
-
-				vertexAttrDescriptions[2].binding = 0;
-				vertexAttrDescriptions[2].location = 2;
-				vertexAttrDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;;
-				vertexAttrDescriptions[2].offset = offsetof(Vertex, texCoord);
-
-
-				return vertexAttrDescriptions;
-			}
 		};
 
 		VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
@@ -144,43 +104,25 @@ namespace Flux
 		}
 
 
-		const std::vector<Vertex> vertices = {
-			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-			{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-			{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-			{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-			{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-			{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-			{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-			{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-		};
-
-		const std::vector<uint16_t> indices = {
-		0, 1, 2, 2, 3, 0,
-		4, 5, 6, 6, 7, 4
-		};
-
 		VmaAllocator memoryAllocator;
 
-		VkImage textureImage;
-		VmaAllocation textureImageMemory;
+		VkImage textureImageCube;
+		VmaAllocation textureImageMemoryCube;
+		VkImage textureImageTriangle;
+		VmaAllocation textureImageMemoryTriangle;
+		
 		VkSampler textureSampler;
 
 		VkImage depthImage;
 		VmaAllocation depthImageMemory;
 		VkImageView depthImageView;
 
-		VkBuffer vertexBuffer;
-		VmaAllocation vertexBufferMemory;
-		VkBuffer indexBuffer;
-		VmaAllocation indexBufferMemory;
+		BasicGeometry *cube;
+		BasicGeometry *triangle;
+		BasicGeometry *sphere;
 
-		VkDescriptorPool descriptorPool;
-		std::vector<VkDescriptorSet> descriptorSets;
-
-		std::vector<VkBuffer> uniformBuffers;
-		std::vector<VmaAllocation> uniformBuffersMemory;
+		std::vector<VkBuffer> uniformBuffer;
+		std::vector<VmaAllocation> uniformBufferMemory;
 
 		VkInstance instance;
 		VkDebugUtilsMessengerEXT debugMessenger;
@@ -203,7 +145,9 @@ namespace Flux
 		VkPipelineLayout pipelineLayout;
 		VkDescriptorSetLayout descriptorSetLayout;
 
-		VkPipeline graphicsPipeline;
+		VkPipeline graphicsPipelineCube;
+		VkPipeline graphicsPipelineTriangle;
+		VkPipeline graphicsPipelineSphere;
 
 		VkCommandPool commandPool;
 		std::vector<VkCommandBuffer> commandBuffers;
@@ -214,11 +158,17 @@ namespace Flux
 		std::vector<VkFence> imagesInFlight;
 		size_t currentFrame = 0;
 
-		VkImageView textureImageView;
+		VkImageView textureImageViewCube;
+		VkImageView textureImageViewTriangle;
 
 		bool framebufferResized = false;
 
 		std::shared_ptr<Camera> mCamera;
+
+		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage properties, VkBuffer& buffer, VmaAllocation& bufferMemory);
+
+		// This function quickly copies a buffer on the GPU
+		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 	private:
 
@@ -252,15 +202,16 @@ namespace Flux
 
 		void CreateRenderPass();
 
-		void CreateGraphicsPipeline();
+		void CreateGraphicsPipelines();
+		void CreateGraphicsPipelineCube();
+		void CreateGraphicsPipelineTriangle();
+		void CreateGraphicsPipelineSphere();
 
 		void CreateDescriptorSetLayout();
 
 		void CreateFramebuffers();
 
 		void CreateCommandPool();
-
-		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage properties, VkBuffer& buffer, VmaAllocation& bufferMemory);
 
 		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage properties, VkImage& image, VmaAllocation& imageMemory);
 
@@ -270,27 +221,21 @@ namespace Flux
 
 		void CreateDepthResources();
 
-		void CreateTextureImage();
+		void CreateTextureImages();
+		void CreateTextureImageCube();
+		void CreateTextureImageTriangle();
 
-		void CreateTextureImageView();
+		void CreateTextureImageViews();
 
 		void CreateTextureSampler();
 
-		void CreateVertexBuffer();
-
-		void CreateIndexBuffer();
+		void CreateGeometry();
 
 		void CreateUniformBuffers();
 
 		void CreateDescriptorPool();
 
-		// Descriptor layout (layout in set)
-		// Pipeline layout (layout of sets in shaders)
-		// Descriptor allocation 
-		void CreateDescriptorSets();
-
-		// This function quickly copies a buffer on the GPU
-		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+	    void CreateDescriptorSets();
 
 		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 

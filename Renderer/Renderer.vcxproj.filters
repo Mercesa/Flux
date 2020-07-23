@@ -48,7 +48,7 @@
     <ClCompile Include="..\External\VulkanMemoryAllocator-master\src\VmaUsage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Timer.cpp">
+    <ClCompile Include="BasicGeometry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -57,6 +57,24 @@
       <Filter>Resources\Shaders</Filter>
     </None>
     <None Include="..\Resources\Shaders\basic.vert">
+      <Filter>Resources\Shaders</Filter>
+    </None>
+    <None Include="..\Resources\Shaders\cube.frag">
+      <Filter>Resources\Shaders</Filter>
+    </None>
+    <None Include="..\Resources\Shaders\cube.vert">
+      <Filter>Resources\Shaders</Filter>
+    </None>
+    <None Include="..\Resources\Shaders\triangle.frag">
+      <Filter>Resources\Shaders</Filter>
+    </None>
+    <None Include="..\Resources\Shaders\triangle.vert">
+      <Filter>Resources\Shaders</Filter>
+    </None>
+    <None Include="..\Resources\Shaders\sphere.frag">
+      <Filter>Resources\Shaders</Filter>
+    </None>
+    <None Include="..\Resources\Shaders\sphere.vert">
       <Filter>Resources\Shaders</Filter>
     </None>
   </ItemGroup>
@@ -85,7 +103,7 @@
     <ClInclude Include="Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\Timer.h">
+    <ClInclude Include="BasicGeometry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

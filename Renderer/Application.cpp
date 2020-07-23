@@ -58,7 +58,7 @@ void character_callback(GLFWwindow* window, unsigned int codepoint)
 void Flux::Application::Run()
 {
 	mInput = std::make_shared<Input>();
-	mCamera = std::make_shared<Camera>();
+	mCamera = std::make_shared<Camera>(glm::vec3(0.0f, 5.0f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), YAW, -45.0f);
 
 	glfwInit();
 
