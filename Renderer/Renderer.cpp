@@ -7,7 +7,8 @@
 using namespace Flux;
 
 
-Flux::Renderer::Renderer(std::shared_ptr<Camera> aCamera) : mCamera(aCamera)
+
+Flux::Renderer::Renderer(std::shared_ptr<Camera> aCamera) : mCamera(aCamera), mVsync(true)
 {
 }
 
@@ -1413,7 +1414,7 @@ void Renderer::UpdateUniformBuffer(uint32_t currentImage)
 
     UniformBufferObject ubo{};
     ubo.view = mCamera->GetViewMatrix();
-    ubo.projection = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+    ubo.projection = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
     ubo.projection[1][1] *= -1;
 
     void *data;
@@ -1458,8 +1459,12 @@ VkSurfaceFormatKHR Renderer::chooseSwapSurfaceFormat(const std::vector<VkSurface
 
 VkPresentModeKHR Renderer::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
     for (const auto& availablePresentMode : availablePresentModes) {
-        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+        if (availablePresentMode == VK_PRESENT_MODE_FIFO_KHR && !mVsync ) {
             return availablePresentMode;
+        }
+        else
+        {
+            return VK_PRESENT_MODE_FIFO_KHR;
         }
     }
 
