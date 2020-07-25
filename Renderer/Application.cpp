@@ -79,13 +79,14 @@ void Flux::Application::Run()
 	tTimer->Reset();
 	float tDeltaTime = 0.0f;
 
-	mCamera->MovementSpeed = 6.0f;
+	mCamera->MovementSpeed = 5.0f;
 	
 	while (!glfwWindowShouldClose(mWindow)) {
 
-		tDeltaTime = tTimer->GetDelta() * 0.0001f;
+		tDeltaTime = tTimer->GetDelta() * 0.001f;
+
 		glfwPollEvents();
-		
+
 		if (mInput->GetKeyHeld(GLFW_KEY_W))
 		{
 			mCamera->ProcessKeyboard(Flux::Camera_Movement::FORWARD, tDeltaTime);
@@ -101,6 +102,10 @@ void Flux::Application::Run()
 		if (mInput->GetKeyHeld(GLFW_KEY_D))
 		{
 			mCamera->ProcessKeyboard(Flux::Camera_Movement::RIGHT, tDeltaTime);
+		}
+		if (mInput->GetKeyHeld(GLFW_KEY_ESCAPE))
+		{
+			break;
 		}
 
 		mRenderer->Draw();

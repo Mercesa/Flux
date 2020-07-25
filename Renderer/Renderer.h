@@ -103,6 +103,7 @@ namespace Flux
 			Cleanup();
 		}
 
+		bool mVsync;
 
 		VmaAllocator memoryAllocator;
 

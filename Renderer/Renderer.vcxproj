@@ -78,11 +78,11 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Programming\Github\Flux\External\assimp-master\lib\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)External\assimp-master\lib\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -118,14 +118,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions) _CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\SPIRV-Reflect-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\SPIRV-Reflect-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir);$(SolutionDir)\External\assimp-master\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\lib-vc2019;$(VK_SDK_PATH)\Lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\lib-vc2019;$(VK_SDK_PATH)\Lib;$(SolutionDir)external\assimp_master\lib\Debug</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc142-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -136,7 +136,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions) _CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\SPIRV-Reflect-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\SPIRV-Reflect-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir);$(SolutionDir)\External\assimp-master\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -144,8 +144,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\lib-vc2019;$(VK_SDK_PATH)\Lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\lib-vc2019;$(VK_SDK_PATH)\Lib;$(SolutionDir)external\assimp_master\lib\Release</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc142-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -156,6 +156,7 @@
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="BasicGeometry.cpp" />
     <ClCompile Include="Input.cpp" />
+    <ClCompile Include="ModelLoader.cpp" />
     <ClCompile Include="Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -169,14 +170,18 @@
     <None Include="..\Resources\Shaders\triangle.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\AssetObjects.h" />
     <ClInclude Include="..\External\SPIRV-Reflect-master\spirv_reflect.h" />
     <ClInclude Include="..\External\VulkanMemoryAllocator-master\src\vk_mem_alloc.h" />
     <ClInclude Include="..\External\VulkanMemoryAllocator-master\src\VmaUsage.h" />
+    <ClInclude Include="..\iModelLoader.h" />
+    <ClInclude Include="..\iTextureLoader.h" />
     <ClInclude Include="..\Timer.h" />
     <ClInclude Include="Application.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="BasicGeometry.h" />
     <ClInclude Include="Input.h" />
+    <ClInclude Include="ModelLoader.h" />
     <ClInclude Include="Reflection.h" />
     <ClInclude Include="Renderer.h" />
   </ItemGroup>

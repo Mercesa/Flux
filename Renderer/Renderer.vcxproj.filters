@@ -28,6 +28,9 @@
     <Filter Include="External\SpirvReflect">
       <UniqueIdentifier>{5db63512-1cdd-43b7-9e0a-e5de32815bd4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="AssetPipeline">
+      <UniqueIdentifier>{c0e60878-eeac-499f-9431-0df99fab4743}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Main.cpp">
@@ -50,6 +53,12 @@
     </ClCompile>
     <ClCompile Include="BasicGeometry.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Timer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelLoader.cpp">
+      <Filter>AssetPipeline</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -105,6 +114,21 @@
     </ClInclude>
     <ClInclude Include="BasicGeometry.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Timer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\iTextureLoader.h">
+      <Filter>AssetPipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AssetObjects.h">
+      <Filter>AssetPipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="..\iModelLoader.h">
+      <Filter>AssetPipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelLoader.h">
+      <Filter>AssetPipeline</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
