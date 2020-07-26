@@ -3,8 +3,8 @@
 
 #define M_PI 3.14159265358979323846
 
-Flux::BasicGeometry::BasicGeometry(Renderer *renderer)
-	: renderer(renderer)
+Flux::BasicGeometry::BasicGeometry(Renderer *renderer, VkDescriptorPool aPool)
+	: renderer(renderer), mDescriptorPool(aPool)
 {
 }
 
@@ -20,8 +20,6 @@ Flux::BasicGeometry::~BasicGeometry()
 		vkDestroyBuffer(renderer->device, uniformBuffer[i], nullptr);
 		vmaFreeMemory(renderer->memoryAllocator, uniformBufferMemory[i]);
 	}
-
-	vkDestroyDescriptorPool(renderer->device, descriptorPool, nullptr);
 }
 
 void Flux::BasicGeometry::CreateIndexBuffer(void *aData, size_t aDataSize)
@@ -72,28 +70,6 @@ void Flux::BasicGeometry::CreateUniformBuffers()
 	}
 }
 
-void Flux::BasicGeometry::CreateDescriptorPool()
-{
-	std::array<VkDescriptorPoolSize, 2> poolSize{};
-	poolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize[0].descriptorCount = static_cast<uint32_t>(renderer->swapChainImages.size() * 2);
-
-	poolSize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSize[1].descriptorCount = static_cast<uint32_t>(renderer->swapChainImages.size());
-
-
-	VkDescriptorPoolCreateInfo poolInfo{};
-	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSize.size());
-	poolInfo.pPoolSizes = poolSize.data();
-	poolInfo.maxSets = static_cast<uint32_t>(renderer->swapChainImages.size());
-
-	if (vkCreateDescriptorPool(renderer->device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to create descriptor pool");
-	}
-}
-
 void Flux::BasicGeometry::SetModelTransform(glm::mat4 const &aModelMat, uint32_t currentImage)
 {
 	void *data;
@@ -102,8 +78,8 @@ void Flux::BasicGeometry::SetModelTransform(glm::mat4 const &aModelMat, uint32_t
     vmaUnmapMemory(renderer->memoryAllocator, uniformBufferMemory[currentImage]);
 }
 
-Flux::Cube::Cube(Renderer *renderer)
-	: BasicGeometry(renderer)
+Flux::Cube::Cube(Renderer *renderer, VkDescriptorPool aPool)
+	: BasicGeometry(renderer, aPool)
 {
 	static std::vector<glm::vec3> const vertexPositions = {
 		{ -0.5f,  0.5f, -0.5f },
@@ -154,7 +130,7 @@ void Flux::Cube::CreateDescriptorSets()
 	std::vector<VkDescriptorSetLayout> layouts(renderer->swapChainImages.size(), renderer->descriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorPool = mDescriptorPool;
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(renderer->swapChainImages.size());
 	allocInfo.pSetLayouts = layouts.data();
 
@@ -245,8 +221,8 @@ uint32_t Flux::Cube::GetIndexCount()
 }
 
 
-Flux::Triangle::Triangle(Renderer *renderer)
-	: BasicGeometry(renderer)
+Flux::Triangle::Triangle(Renderer *renderer, VkDescriptorPool aPool)
+	: BasicGeometry(renderer, aPool)
 {
 	static std::vector<Vertex> const vertices = {
 		{ { -1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f } },
@@ -264,7 +240,7 @@ void Flux::Triangle::CreateDescriptorSets()
 	std::vector<VkDescriptorSetLayout> layouts(renderer->swapChainImages.size(), renderer->descriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorPool = mDescriptorPool;
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(renderer->swapChainImages.size());
 	allocInfo.pSetLayouts = layouts.data();
 
@@ -360,8 +336,8 @@ uint32_t Flux::Triangle::GetIndexCount()
 }
 
 
-Flux::Sphere::Sphere(Renderer *renderer)
-	: BasicGeometry(renderer)
+Flux::Sphere::Sphere(Renderer *renderer, VkDescriptorPool aPool)
+	: BasicGeometry(renderer, aPool)
 {
 	std::vector<Vertex> vertices;
 	std::vector<uint16_t> indices;
@@ -435,7 +411,7 @@ void Flux::Sphere::CreateDescriptorSets()
 	std::vector<VkDescriptorSetLayout> layouts(renderer->swapChainImages.size(), renderer->descriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorPool = mDescriptorPool;
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(renderer->swapChainImages.size());
 	allocInfo.pSetLayouts = layouts.data();
 

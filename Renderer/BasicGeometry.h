@@ -24,15 +24,15 @@ namespace Flux
 		VmaAllocation indexBufferMemory;
 
 	protected:
-		VkDescriptorPool descriptorPool;
 		std::vector<VkDescriptorSet> descriptorSets;
 
 		std::vector<VkBuffer> uniformBuffer;
 		std::vector<VmaAllocation> uniformBufferMemory;
 
 		Renderer *renderer;
+		VkDescriptorPool mDescriptorPool; 
 
-		BasicGeometry(Renderer *renderer);
+		BasicGeometry(Renderer *renderer, VkDescriptorPool aPool);
 
 		void CreateIndexBuffer(void *data, size_t dataSize);
 		void CreateVertexBuffer(void *data, size_t dataSize);
@@ -41,7 +41,6 @@ namespace Flux
 		virtual ~BasicGeometry();
 
 		void CreateUniformBuffers();
-		void CreateDescriptorPool();
 		virtual void CreateDescriptorSets() = 0;
 
 		VkBuffer GetVertexBuffer() { return vertexBuffer; }
@@ -65,7 +64,7 @@ namespace Flux
 		uint32_t numIndices;
 
 	public:
-		Cube(Renderer *renderer);
+		Cube(Renderer *renderer, VkDescriptorPool aPool);
 
 		virtual void CreateDescriptorSets() override;
 		virtual VkVertexInputBindingDescription GetBindingDescription() override;
@@ -82,7 +81,7 @@ namespace Flux
 		};
 
 	public:
-		Triangle(Renderer *renderer);
+		Triangle(Renderer *renderer, VkDescriptorPool aPool);
 
 		virtual void CreateDescriptorSets() override;
 		virtual VkVertexInputBindingDescription GetBindingDescription() override;
@@ -100,7 +99,7 @@ namespace Flux
 		uint32_t numIndices;
 
 	public:
-		Sphere(Renderer *renderer);
+		Sphere(Renderer *renderer, VkDescriptorPool aPool);
 
 		virtual void CreateDescriptorSets() override;
 		virtual VkVertexInputBindingDescription GetBindingDescription() override;

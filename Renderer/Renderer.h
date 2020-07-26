@@ -150,6 +150,8 @@ namespace Flux
 		VkPipeline graphicsPipelineTriangle;
 		VkPipeline graphicsPipelineSphere;
 
+		VkDescriptorPool descriptorPool;
+
 		VkCommandPool commandPool;
 		std::vector<VkCommandBuffer> commandBuffers;
 

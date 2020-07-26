@@ -42,6 +42,7 @@ void Renderer::Renderer::InitVulkan() {
     CreateRenderPass();
     CreateDescriptorSetLayout();
     CreateCommandPool();
+    CreateDescriptorPool();
     CreateGeometry();
     CreateGraphicsPipelines();
     CreateDepthResources();
@@ -50,7 +51,6 @@ void Renderer::Renderer::InitVulkan() {
     CreateTextureImageViews();
     CreateTextureSampler();
     CreateUniformBuffers();
-    CreateDescriptorPool();
     CreateDescriptorSets();
     CreateCommandBuffers();
     CreateSyncObjects();
@@ -104,6 +104,7 @@ void Renderer::Cleanup() {
     vkDestroyImage(device, textureImageTriangle, nullptr);
     vmaFreeMemory(memoryAllocator, textureImageMemoryTriangle);
 
+    vkDestroyDescriptorPool(device, this->descriptorPool, nullptr);
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
@@ -150,6 +151,8 @@ void Renderer::RecreateSwapChain() {
     CreateGraphicsPipelines();
     CreateFramebuffers();
     CreateUniformBuffers();
+    CreateDescriptorPool();
+    CreateDescriptorSets();
     CreateCommandBuffers();
 }
 
@@ -1097,9 +1100,9 @@ void Renderer::CreateTextureSampler()
 }
 
 void Renderer::CreateGeometry() {
-    cube = new Cube(this);
-    triangle = new Triangle(this);
-    sphere = new Sphere(this);
+    cube = new Cube(this, descriptorPool);
+    triangle = new Triangle(this, descriptorPool);
+    sphere = new Sphere(this, descriptorPool);
 }
 
 void Renderer::CreateUniformBuffers()
@@ -1119,9 +1122,32 @@ void Renderer::CreateUniformBuffers()
 
 void Renderer::CreateDescriptorPool()
 {
-    cube->CreateDescriptorPool();
-    triangle->CreateDescriptorPool();
-    sphere->CreateDescriptorPool();
+    std::vector<VkDescriptorPoolSize> descriptorPoolSizes =
+    {
+        { VK_DESCRIPTOR_TYPE_SAMPLER, 1024 },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 512 },
+        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 8192 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1024 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1024 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1024 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8192 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1024 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1024 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1 },
+        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1 },
+    };
+
+    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{};
+    descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    descriptorPoolCreateInfo.poolSizeCount = descriptorPoolSizes.size();
+    descriptorPoolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
+    descriptorPoolCreateInfo.maxSets = 1000;
+    
+    if (vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &descriptorPool) != VK_SUCCESS)
+    {
+        throw std::runtime_error(" Failed to create descriptor pool");
+    }
+
 }
 
 void Renderer::CreateDescriptorSets()

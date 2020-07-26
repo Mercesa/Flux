@@ -31,6 +31,9 @@
     <Filter Include="AssetPipeline">
       <UniqueIdentifier>{c0e60878-eeac-499f-9431-0df99fab4743}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Rendering">
+      <UniqueIdentifier>{a48dcbc2-8c8a-42be-8dc9-491089b20d73}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Main.cpp">
