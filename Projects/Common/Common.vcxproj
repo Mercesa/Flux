@@ -19,16 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\Renderer\ModelLoader.h" />
+    <ClInclude Include="..\..\src\Common\AssetProcessing\iModelLoader.h" />
+    <ClInclude Include="..\..\src\Common\Time\Timer.h" />
     <ClInclude Include="src\AssetProcessing\AssetObjects.h" />
-    <ClInclude Include="src\AssetProcessing\iModelLoader.h" />
     <ClInclude Include="src\AssetProcessing\iTextureLoader.h" />
-    <ClInclude Include="src\Time\Timer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\Renderer\ModelLoader.cpp" />
-    <ClCompile Include="src\AssetProcessing\iModelLoader.cpp" />
-    <ClCompile Include="src\Time\Timer.cpp" />
+    <ClCompile Include="..\..\src\Common\AssetProcessing\iModelLoader.cpp" />
+    <ClCompile Include="..\..\src\Common\Time\Timer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -94,6 +92,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(ProjectDir)lib\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -154,8 +153,10 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\glm;$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>

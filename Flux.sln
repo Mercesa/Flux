@@ -8,6 +8,10 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Common", "Projects\Common\Common.vcxproj", "{8AFBE247-EA35-4827-A759-8021BACD1027}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Application", "Projects\Application\Application.vcxproj", "{052A749F-2CB1-4565-9B6C-45BEA9BDF131}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8AFBE247-EA35-4827-A759-8021BACD1027} = {8AFBE247-EA35-4827-A759-8021BACD1027}
+		{439AC099-9CDA-4412-B339-E1C43E37661C} = {439AC099-9CDA-4412-B339-E1C43E37661C}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
