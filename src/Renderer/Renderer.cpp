@@ -417,7 +417,7 @@ void Renderer::CreateRenderPass() {
 
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = attachments.size();
+    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
     renderPassInfo.pAttachments = attachments.data();
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
@@ -1139,7 +1139,7 @@ void Renderer::CreateDescriptorPool()
 
     VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{};
     descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    descriptorPoolCreateInfo.poolSizeCount = descriptorPoolSizes.size();
+    descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size());
     descriptorPoolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
     descriptorPoolCreateInfo.maxSets = 1000;
     

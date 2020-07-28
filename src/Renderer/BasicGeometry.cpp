@@ -119,7 +119,7 @@ Flux::Cube::Cube(Renderer *renderer, VkDescriptorPool aPool)
 			indices.push_back(static_cast<uint16_t>(indices.size()));
 		}
 	}
-	numIndices = indices.size();
+	numIndices = static_cast<uint32_t>(indices.size());
 
 	CreateIndexBuffer((void *)indices.data(), sizeof(indices[0]) * indices.size());
 	CreateVertexBuffer((void *)vertices.data(), sizeof(vertices[0]) * vertices.size());
@@ -395,12 +395,12 @@ Flux::Sphere::Sphere(Renderer *renderer, VkDescriptorPool aPool)
 	{
 		uint32_t const a = i + meridians * (parallels - 2) + 1;
 		uint32_t const b = (i + 1) % meridians + meridians * (parallels - 2) + 1;
-		indices.push_back(vertices.size() - 1);
+		indices.push_back(static_cast<uint32_t>(vertices.size() - 1));
 		indices.push_back(a);
 		indices.push_back(b);
 	}
 
-	numIndices = indices.size();
+	numIndices = static_cast<uint32_t>(indices.size());
 
 	CreateIndexBuffer((void *)indices.data(), sizeof(indices[0]) * indices.size());
 	CreateVertexBuffer((void *)vertices.data(), sizeof(vertices[0]) * vertices.size());

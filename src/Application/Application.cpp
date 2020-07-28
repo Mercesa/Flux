@@ -29,7 +29,7 @@ void cursorpos_callback(GLFWwindow* window, double xpos, double ypos)
 		firstFrame = false;
 	}
 	
-	mCamera->ProcessMouseMovement((xpos - lastPosX), -(ypos - lastPosY), true);
+	mCamera->ProcessMouseMovement(static_cast<float>(xpos - lastPosX), static_cast<float>(-(ypos - lastPosY)), true);
 	mInput->MouseMoveInput(xpos, ypos);
 
 	lastPosX = xpos;
@@ -84,7 +84,7 @@ void Flux::Application::Run()
 	
 	while (!glfwWindowShouldClose(mWindow)) {
 
-		tDeltaTime = tTimer->GetDelta() * 0.001f;
+		tDeltaTime = static_cast<float>(tTimer->GetDelta() * 0.001);
 
 		glfwPollEvents();
 
