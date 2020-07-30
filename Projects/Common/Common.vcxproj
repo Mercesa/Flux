@@ -19,13 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\Common\AssetProcessing\AssetObjects.h" />
     <ClInclude Include="..\..\src\Common\AssetProcessing\iModelLoader.h" />
+    <ClInclude Include="..\..\src\Common\AssetProcessing\iTextureLoader.h" />
+    <ClInclude Include="..\..\src\Common\AssetProcessing\ModelLoader.h" />
     <ClInclude Include="..\..\src\Common\Time\Timer.h" />
-    <ClInclude Include="src\AssetProcessing\AssetObjects.h" />
-    <ClInclude Include="src\AssetProcessing\iTextureLoader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\Common\AssetProcessing\iModelLoader.cpp" />
+    <ClCompile Include="..\..\src\Common\AssetProcessing\ModelLoader.cpp" />
     <ClCompile Include="..\..\src\Common\Time\Timer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -137,13 +138,17 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glm;$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\glm;$(SolutionDir)src;$(SolutionDir)\External\assimp-master\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
       </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Lib>
+      <AdditionalDependencies>assimp-vc142-mtd.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)External\assimp-master\lib\Debug</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -156,7 +161,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glm;$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\glm;$(SolutionDir)src;$(SolutionDir)\External\assimp-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -165,6 +170,10 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Lib>
+      <AdditionalDependencies>assimp-vc142-mt.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)External\assimp-master\lib\Release;</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

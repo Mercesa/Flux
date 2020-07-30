@@ -22,9 +22,6 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.cpp" />
-    <ClCompile Include="..\..\src\Renderer\ModelLoader.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\External\VulkanMemoryAllocator-master\src\vk_mem_alloc.h">
@@ -46,8 +43,5 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.h" />
-    <ClInclude Include="..\..\src\Renderer\ModelLoader.h">
-      <Filter>src</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>
