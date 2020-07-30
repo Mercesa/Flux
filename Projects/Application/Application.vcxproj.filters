@@ -22,6 +22,9 @@
     <ClInclude Include="..\..\src\Application\Application.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="CustomRenderer.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Application\Input.cpp">
@@ -31,6 +34,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Application\Application.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="CustomRenderer.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
