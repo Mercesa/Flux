@@ -151,14 +151,14 @@
   <ItemGroup>
     <ClInclude Include="..\..\src\Application\Application.h" />
     <ClInclude Include="..\..\src\Application\Camera.h" />
+    <ClInclude Include="..\..\src\Application\CustomRenderer.h" />
     <ClInclude Include="..\..\src\Application\Input.h" />
-    <ClInclude Include="CustomRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Application\Application.cpp" />
+    <ClCompile Include="..\..\src\Application\CustomRenderer.cpp" />
     <ClCompile Include="..\..\src\Application\Input.cpp" />
     <ClCompile Include="..\..\src\Application\Main.cpp" />
-    <ClCompile Include="CustomRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Shaders\basic.frag" />
