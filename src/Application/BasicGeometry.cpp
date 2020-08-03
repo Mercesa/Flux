@@ -1,9 +1,10 @@
 #include "BasicGeometry.h"
-#include "Renderer.h"
-
+#include "Application/CustomRenderer.h"
+#include "Renderer/SwapchainVK.h"
 #define M_PI 3.14159265358979323846
 
-Flux::BasicGeometry::BasicGeometry(Renderer *renderer, VkDescriptorPool aPool)
+using namespace Flux;
+Flux::BasicGeometry::BasicGeometry(CustomRenderer *renderer, VkDescriptorPool aPool)
 	: renderer(renderer), mDescriptorPool(aPool)
 {
 }
@@ -16,7 +17,7 @@ Flux::BasicGeometry::~BasicGeometry()
 	vkDestroyBuffer(renderer->device, vertexBuffer, nullptr);
 	vmaFreeMemory(renderer->memoryAllocator, vertexBufferMemory);
 
-	for (size_t i = 0; i < renderer->swapChainImages.size(); i++) {
+	for (size_t i = 0; i < renderer->mSwapchain->mImages.size(); i++) {
 		vkDestroyBuffer(renderer->device, uniformBuffer[i], nullptr);
 		vmaFreeMemory(renderer->memoryAllocator, uniformBufferMemory[i]);
 	}
@@ -62,8 +63,8 @@ void Flux::BasicGeometry::CreateVertexBuffer(void *aData, size_t aDataSize)
 
 void Flux::BasicGeometry::CreateUniformBuffers()
 {
-	uniformBuffer.resize(renderer->swapChainImages.size());
-	uniformBufferMemory.resize(renderer->swapChainImages.size());
+	uniformBuffer.resize(renderer->mSwapchain->mImages.size());
+	uniformBufferMemory.resize(renderer->mSwapchain->mImages.size());
 	for (size_t i = 0; i < uniformBuffer.size(); i++)
 	{
 		renderer->CreateBuffer(sizeof(glm::mat4), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, uniformBuffer[i], uniformBufferMemory[i]);
@@ -78,7 +79,7 @@ void Flux::BasicGeometry::SetModelTransform(glm::mat4 const &aModelMat, uint32_t
     vmaUnmapMemory(renderer->memoryAllocator, uniformBufferMemory[currentImage]);
 }
 
-Flux::Cube::Cube(Renderer *renderer, VkDescriptorPool aPool)
+Flux::Cube::Cube(CustomRenderer *renderer, VkDescriptorPool aPool)
 	: BasicGeometry(renderer, aPool)
 {
 	static std::vector<glm::vec3> const vertexPositions = {
@@ -127,25 +128,25 @@ Flux::Cube::Cube(Renderer *renderer, VkDescriptorPool aPool)
 
 void Flux::Cube::CreateDescriptorSets()
 {
-	std::vector<VkDescriptorSetLayout> layouts(renderer->swapChainImages.size(), renderer->descriptorSetLayout);
+	std::vector<VkDescriptorSetLayout> layouts(renderer->mSwapchain->mImages.size(), renderer->descriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = mDescriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(renderer->swapChainImages.size());
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(renderer->mSwapchain->mImages.size());
 	allocInfo.pSetLayouts = layouts.data();
 
-	descriptorSets.resize(renderer->swapChainImages.size());
+	descriptorSets.resize(renderer->mSwapchain->mImages.size());
 	if (vkAllocateDescriptorSets(renderer->device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to allcoate descriptor sets!");
 	}
 
-	for (size_t i = 0; i < renderer->swapChainImages.size(); i++)
+	for (size_t i = 0; i < renderer->mSwapchain->mImages.size(); i++)
 	{
 		VkDescriptorBufferInfo bufferInfoCamera{};
 		bufferInfoCamera.buffer = renderer->uniformBuffer[i];
 		bufferInfoCamera.offset = 0;
-		bufferInfoCamera.range = sizeof(Renderer::UniformBufferObject);
+		bufferInfoCamera.range = sizeof(CustomRenderer::UniformBufferObject);
 
 		VkDescriptorBufferInfo bufferInfoModel{};
 		bufferInfoModel.buffer = uniformBuffer[i];
@@ -221,7 +222,7 @@ uint32_t Flux::Cube::GetIndexCount()
 }
 
 
-Flux::Triangle::Triangle(Renderer *renderer, VkDescriptorPool aPool)
+Flux::Triangle::Triangle(CustomRenderer *renderer, VkDescriptorPool aPool)
 	: BasicGeometry(renderer, aPool)
 {
 	static std::vector<Vertex> const vertices = {
@@ -237,25 +238,25 @@ Flux::Triangle::Triangle(Renderer *renderer, VkDescriptorPool aPool)
 
 void Flux::Triangle::CreateDescriptorSets()
 {
-	std::vector<VkDescriptorSetLayout> layouts(renderer->swapChainImages.size(), renderer->descriptorSetLayout);
+	std::vector<VkDescriptorSetLayout> layouts(renderer->mSwapchain->mImages.size(), renderer->descriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = mDescriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(renderer->swapChainImages.size());
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(renderer->mSwapchain->mImages.size());
 	allocInfo.pSetLayouts = layouts.data();
 
-	descriptorSets.resize(renderer->swapChainImages.size());
+	descriptorSets.resize(renderer->mSwapchain->mImages.size());
 	if (vkAllocateDescriptorSets(renderer->device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to allcoate descriptor sets!");
 	}
 
-	for (size_t i = 0; i < renderer->swapChainImages.size(); i++)
+	for (size_t i = 0; i < renderer->mSwapchain->mImages.size(); i++)
 	{
 		VkDescriptorBufferInfo bufferInfoCamera{};
 		bufferInfoCamera.buffer = renderer->uniformBuffer[i];
 		bufferInfoCamera.offset = 0;
-		bufferInfoCamera.range = sizeof(Renderer::UniformBufferObject);
+		bufferInfoCamera.range = sizeof(CustomRenderer::UniformBufferObject);
 
 		VkDescriptorBufferInfo bufferInfoModel{};
 		bufferInfoModel.buffer = uniformBuffer[i];
@@ -336,7 +337,7 @@ uint32_t Flux::Triangle::GetIndexCount()
 }
 
 
-Flux::Sphere::Sphere(Renderer *renderer, VkDescriptorPool aPool)
+Flux::Sphere::Sphere(CustomRenderer *renderer, VkDescriptorPool aPool)
 	: BasicGeometry(renderer, aPool)
 {
 	std::vector<Vertex> vertices;
@@ -408,25 +409,25 @@ Flux::Sphere::Sphere(Renderer *renderer, VkDescriptorPool aPool)
 
 void Flux::Sphere::CreateDescriptorSets()
 {
-	std::vector<VkDescriptorSetLayout> layouts(renderer->swapChainImages.size(), renderer->descriptorSetLayout);
+	std::vector<VkDescriptorSetLayout> layouts(renderer->mSwapchain->mImages.size(), renderer->descriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = mDescriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(renderer->swapChainImages.size());
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(renderer->mSwapchain->mImages.size());
 	allocInfo.pSetLayouts = layouts.data();
 
-	descriptorSets.resize(renderer->swapChainImages.size());
+	descriptorSets.resize(renderer->mSwapchain->mImages.size());
 	if (vkAllocateDescriptorSets(renderer->device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to allcoate descriptor sets!");
 	}
 
-	for (size_t i = 0; i < renderer->swapChainImages.size(); i++)
+	for (size_t i = 0; i < renderer->mSwapchain->mImages.size(); i++)
 	{
 		VkDescriptorBufferInfo bufferInfoCamera{};
 		bufferInfoCamera.buffer = renderer->uniformBuffer[i];
 		bufferInfoCamera.offset = 0;
-		bufferInfoCamera.range = sizeof(Renderer::UniformBufferObject);
+		bufferInfoCamera.range = sizeof(CustomRenderer::UniformBufferObject);
 
 		VkDescriptorBufferInfo bufferInfoModel{};
 		bufferInfoModel.buffer = uniformBuffer[i];

@@ -1,6 +1,6 @@
 #include "Application.h"
 
-#include "Renderer/Renderer.h"
+#include "CustomRenderer.h"
 
 #include "Input.h"
 #include "Camera.h"
@@ -71,7 +71,7 @@ void Flux::Application::Run()
 	glfwSetCharCallback(mWindow, character_callback);
 	glfwSetKeyCallback(mWindow, key_callback);
 	glfwSetCursorPosCallback(mWindow, cursorpos_callback);
-	mRenderer = std::make_unique<Renderer>(mCamera);
+	mRenderer = std::make_unique<CustomRenderer>(mCamera);
 	mRenderer->SetWindow(mWindow);
 	mRenderer->Init();
 	mCamera->MouseSensitivity = 1.0f;

@@ -22,7 +22,10 @@
     <ClInclude Include="..\..\src\Application\Application.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="CustomRenderer.h">
+    <ClInclude Include="..\..\src\Application\CustomRenderer.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Application\BasicGeometry.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
@@ -36,7 +39,10 @@
     <ClCompile Include="..\..\src\Application\Application.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="CustomRenderer.cpp">
+    <ClCompile Include="..\..\src\Application\CustomRenderer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Application\BasicGeometry.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

@@ -8,7 +8,7 @@
 
 namespace Flux
 {
-	class Renderer;
+	class CustomRenderer;
 class Application
 {
 public:
@@ -27,7 +27,7 @@ private:
 
 	bool mResized;
 
-	std::unique_ptr<Renderer> mRenderer;
+	std::unique_ptr<CustomRenderer> mRenderer;
 	
 protected:
 };

@@ -15,26 +15,20 @@
     <ClCompile Include="..\..\External\SPIRV-Reflect-master\spirv_reflect.c">
       <Filter>src\External\SpirvReflect</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Renderer\BasicGeometry.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\Renderer\Renderer.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.cpp" />
+    <ClCompile Include="..\..\src\Renderer\SwapchainVK.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\External\VulkanMemoryAllocator-master\src\vk_mem_alloc.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\External\SPIRV-Reflect-master\spirv_reflect.h">
       <Filter>src\External\SpirvReflect</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\VulkanSDK\1.2.141.2\Include\spirv_cross\spirv_reflect.hpp">
       <Filter>src\External\SpirvReflect</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\Renderer\BasicGeometry.h">
-      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Renderer\Reflection.h">
       <Filter>src</Filter>
@@ -43,5 +37,8 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.h" />
+    <ClInclude Include="..\..\src\Renderer\SwapchainVK.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
