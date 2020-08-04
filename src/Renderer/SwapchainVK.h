@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <vulkan/vulkan.h>
-
+#include <VmaUsage.h>
 
 namespace Flux
 {
@@ -16,8 +16,9 @@ namespace Flux
 		VkFormat mImageFormat;
 		VkExtent2D mExtent;
 		
-		VkImageView mDepthViews;
-		VkImage mDepthImage;
+		VkImage depthImage;
+		VmaAllocation depthImageMemory;
+		VkImageView depthImageView;
 
 		std::vector<VkFramebuffer> mFramebuffers;
 	};

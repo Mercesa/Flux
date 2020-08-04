@@ -114,9 +114,6 @@ namespace Flux
 		
 		VkSampler textureSampler;
 
-		VkImage depthImage;
-		VmaAllocation depthImageMemory;
-		VkImageView depthImageView;
 
 		BasicGeometry *cube;
 		BasicGeometry *triangle;

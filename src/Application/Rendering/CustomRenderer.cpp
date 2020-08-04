@@ -69,10 +69,10 @@ void CustomRenderer::CustomRenderer::MainLoop() {
 
 void CustomRenderer::CustomRenderer:: CleanupSwapChain() {
 
-    vkDestroyImageView(device, depthImageView, nullptr);
-    vkDestroyImage(device, depthImage, nullptr);
+    vkDestroyImageView(device, mSwapchain->depthImageView, nullptr);
+    vkDestroyImage(device, mSwapchain->depthImage, nullptr);
 
-    vmaFreeMemory(this->memoryAllocator, depthImageMemory);
+    vmaFreeMemory(this->memoryAllocator, mSwapchain->depthImageMemory);
 
     for (auto framebuffer : mSwapchain->mFramebuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -901,7 +901,7 @@ void CustomRenderer::CreateFramebuffers() {
     for (size_t i = 0; i < mSwapchain->mImageViews.size(); i++) {
         std::array<VkImageView, 2> attachments = {
             mSwapchain->mImageViews[i],
-            depthImageView
+            mSwapchain->depthImageView
         };
 
         VkFramebufferCreateInfo framebufferInfo{};
@@ -973,8 +973,8 @@ void CustomRenderer::CreateImage(uint32_t width, uint32_t height, VkFormat forma
 void CustomRenderer::CreateDepthResources()
 {
     VkFormat depthFormat = FindDepthFormat();
-    CreateImage(mSwapchain->mExtent.width, mSwapchain->mExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, depthImage, depthImageMemory);
-    depthImageView = CreateImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    CreateImage(mSwapchain->mExtent.width, mSwapchain->mExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, mSwapchain->depthImage, mSwapchain->depthImageMemory);
+    mSwapchain->depthImageView = CreateImageView(mSwapchain->depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 void CustomRenderer::CreateTextureImages() {
