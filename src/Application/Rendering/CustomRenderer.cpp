@@ -2,6 +2,7 @@
 #include "CustomRenderer.h"
 #include "Application/Camera.h"
 #include "Renderer/SwapchainVK.h"
+#include "Common/AssetProcessing/ModelLoader.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -9,7 +10,7 @@ using namespace Flux;
 
 
 
-Flux::CustomRenderer::CustomRenderer(std::shared_ptr<Camera> aCamera) : mCamera(aCamera), mVsync(true)
+Flux::CustomRenderer::CustomRenderer(std::shared_ptr<Camera> aCamera) : mCamera(aCamera), mVsync(true), sponzaAsset(nullptr)
 {
     mRenderer = std::make_shared<Renderer>();
     mSwapchain = std::make_shared<SwapchainVK>();
@@ -17,6 +18,9 @@ Flux::CustomRenderer::CustomRenderer(std::shared_ptr<Camera> aCamera) : mCamera(
 
 void Flux::CustomRenderer::Init()
 {
+    ModelLoader loader;
+    sponzaAsset = loader.LoadModel("Resources/Models/Sponza/sponza.obj");
+
     InitVulkan();
 }
 

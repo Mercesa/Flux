@@ -12,9 +12,13 @@ namespace Flux
 	public:
 		VkSwapchainKHR mSwapChain;
 		std::vector<VkImage> mImages;
-		VkFormat mImageFormat;
-		VkExtent2D mExtent;;
 		std::vector<VkImageView> mImageViews;
+		VkFormat mImageFormat;
+		VkExtent2D mExtent;
+		
+		VkImageView mDepthViews;
+		VkImage mDepthImage;
+
 		std::vector<VkFramebuffer> mFramebuffers;
 	};
 };

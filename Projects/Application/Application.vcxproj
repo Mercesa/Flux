@@ -152,15 +152,20 @@
     <ClInclude Include="..\..\src\Application\Application.h" />
     <ClInclude Include="..\..\src\Application\BasicGeometry.h" />
     <ClInclude Include="..\..\src\Application\Camera.h" />
-    <ClInclude Include="..\..\src\Application\CustomRenderer.h" />
     <ClInclude Include="..\..\src\Application\Input.h" />
+    <ClInclude Include="..\..\src\Application\Rendering\CustomRenderer.h" />
+    <ClInclude Include="..\..\src\Application\Rendering\Mesh.h" />
+    <ClInclude Include="..\..\src\Application\Rendering\Model.h" />
+    <ClInclude Include="Model.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Application\Application.cpp" />
     <ClCompile Include="..\..\src\Application\BasicGeometry.cpp" />
-    <ClCompile Include="..\..\src\Application\CustomRenderer.cpp" />
     <ClCompile Include="..\..\src\Application\Input.cpp" />
     <ClCompile Include="..\..\src\Application\Main.cpp" />
+    <ClCompile Include="..\..\src\Application\Rendering\CustomRenderer.cpp" />
+    <ClCompile Include="..\..\src\Application\Rendering\Mesh.cpp" />
+    <ClCompile Include="..\..\src\Application\Rendering\Model.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Shaders\basic.frag" />

@@ -10,6 +10,7 @@ namespace Flux
     class ModelLoader :
         public iModelLoader
     {
+    public:
         virtual std::shared_ptr<ModelAsset> LoadModel(std::string aFilepath);
 
     private:

@@ -1,5 +1,5 @@
-#include "BasicGeometry.h"
-#include "Application/CustomRenderer.h"
+#include "Application/BasicGeometry.h"
+#include "Application/Rendering/CustomRenderer.h"
 #include "Renderer/SwapchainVK.h"
 #define M_PI 3.14159265358979323846
 

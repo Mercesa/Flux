@@ -11,6 +11,9 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="src\Rendering">
+      <UniqueIdentifier>{481fe9fb-a52b-411f-8b71-c12ac46f7bb7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\Application\Camera.h">
@@ -22,11 +25,18 @@
     <ClInclude Include="..\..\src\Application\Application.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Application\CustomRenderer.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\Application\BasicGeometry.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Application\Rendering\CustomRenderer.h">
+      <Filter>src\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Application\Rendering\Mesh.h">
+      <Filter>src\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.h" />
+    <ClInclude Include="..\..\src\Application\Rendering\Model.h">
+      <Filter>src\Rendering</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -39,11 +49,17 @@
     <ClCompile Include="..\..\src\Application\Application.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Application\CustomRenderer.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\Application\BasicGeometry.cpp">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Application\Rendering\Mesh.cpp">
+      <Filter>src\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Application\Rendering\CustomRenderer.cpp">
+      <Filter>src\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Application\Rendering\Model.cpp">
+      <Filter>src\Rendering</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

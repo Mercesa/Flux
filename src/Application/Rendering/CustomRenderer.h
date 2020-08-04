@@ -26,7 +26,8 @@
 #include "Renderer/Reflection.h"
 #include "Renderer/Renderer.h"
 
-#include "BasicGeometry.h"
+#include "Application/BasicGeometry.h"
+#include "common/AssetProcessing/AssetObjects.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -134,7 +135,7 @@ namespace Flux
 		VkQueue graphicsQueue;
 		VkQueue presentQueue;
 
-
+		std::shared_ptr<ModelAsset> sponzaAsset;
 
 		VkRenderPass renderPass;
 		VkPipelineLayout pipelineLayout;
