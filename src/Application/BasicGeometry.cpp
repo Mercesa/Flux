@@ -27,16 +27,16 @@ void Flux::BasicGeometry::CreateIndexBuffer(void *aData, size_t aDataSize)
 {
 	VkBuffer stagingBuffer;
 	VmaAllocation stagingBufferMemory;
-	renderer->CreateBuffer(aDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer, stagingBufferMemory);
+	renderer->mRenderer->CreateBuffer(renderer->device, renderer->memoryAllocator, aDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer, stagingBufferMemory);
 
 	void* data;
 	vmaMapMemory(renderer->memoryAllocator, stagingBufferMemory, &data);
 	memcpy(data, aData, aDataSize);
 	vmaUnmapMemory(renderer->memoryAllocator, stagingBufferMemory);
 
-	renderer->CreateBuffer(aDataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,  VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, indexBuffer, indexBufferMemory);
+	renderer->mRenderer->CreateBuffer(renderer->device, renderer->memoryAllocator, aDataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,  VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, indexBuffer, indexBufferMemory);
 
-	renderer->CopyBuffer(stagingBuffer, indexBuffer, aDataSize);
+	renderer->mRenderer->CopyBuffer(renderer->device, renderer->graphicsQueue, renderer->commandPool, stagingBuffer, indexBuffer, aDataSize);
 
 	vkDestroyBuffer(renderer->device, stagingBuffer, nullptr);
 	vmaFreeMemory(renderer->memoryAllocator, stagingBufferMemory);
@@ -46,16 +46,16 @@ void Flux::BasicGeometry::CreateVertexBuffer(void *aData, size_t aDataSize)
 {
 	VkBuffer stagingBuffer;
 	VmaAllocation stagingBufferMemory;
-	renderer->CreateBuffer(aDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer, stagingBufferMemory);
+	renderer->mRenderer->CreateBuffer(renderer->device, renderer->memoryAllocator,aDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer, stagingBufferMemory);
 
 	void* data;
 	vmaMapMemory(renderer->memoryAllocator, stagingBufferMemory, &data);
 	memcpy(data, aData, aDataSize);
 	vmaUnmapMemory(renderer->memoryAllocator, stagingBufferMemory);
 
-	renderer->CreateBuffer(aDataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, vertexBuffer, vertexBufferMemory);
+	renderer->mRenderer->CreateBuffer(renderer->device, renderer->memoryAllocator, aDataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, vertexBuffer, vertexBufferMemory);
 
-	renderer->CopyBuffer(stagingBuffer, vertexBuffer, aDataSize);
+	renderer->mRenderer->CopyBuffer(renderer->device, renderer->graphicsQueue, renderer->commandPool, stagingBuffer, vertexBuffer, aDataSize);
 
 	vkDestroyBuffer(renderer->device, stagingBuffer, nullptr);
 	vmaFreeMemory(renderer->memoryAllocator, stagingBufferMemory);
@@ -67,7 +67,7 @@ void Flux::BasicGeometry::CreateUniformBuffers()
 	uniformBufferMemory.resize(renderer->mSwapchain->mImages.size());
 	for (size_t i = 0; i < uniformBuffer.size(); i++)
 	{
-		renderer->CreateBuffer(sizeof(glm::mat4), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, uniformBuffer[i], uniformBufferMemory[i]);
+		renderer->mRenderer->CreateBuffer(renderer->device, renderer->memoryAllocator, sizeof(glm::mat4), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, uniformBuffer[i], uniformBufferMemory[i]);
 	}
 }
 

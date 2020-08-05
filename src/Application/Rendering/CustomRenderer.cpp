@@ -19,7 +19,7 @@ Flux::CustomRenderer::CustomRenderer(std::shared_ptr<Camera> aCamera) : mCamera(
 void Flux::CustomRenderer::Init()
 {
     ModelLoader loader;
-    sponzaAsset = loader.LoadModel("Resources/Models/Sponza/sponza.obj");
+    //sponzaAsset = loader.LoadModel("Resources/Models/Sponza/sponza.obj");
 
     InitVulkan();
 }
@@ -931,20 +931,6 @@ void CustomRenderer::CreateCommandPool() {
     }
 }
 
-void CustomRenderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage properties, VkBuffer& buffer, VmaAllocation& bufferMemory) {
-    VkBufferCreateInfo bufferInfo{};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = size;
-    bufferInfo.usage = usage;
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-
-    VmaAllocationCreateInfo allocInfo = {};
-    allocInfo.usage = properties;
-
-    vmaCreateBuffer(memoryAllocator, &bufferInfo, &allocInfo, &buffer, &bufferMemory, nullptr);
-}
-
 void CustomRenderer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage properties, VkImage& image, VmaAllocation& imageMemory) {
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -967,8 +953,6 @@ void CustomRenderer::CreateImage(uint32_t width, uint32_t height, VkFormat forma
 
     vmaCreateImage(memoryAllocator, &imageInfo, &allocInfo, &image, &imageMemory, nullptr);
 }
-
-
 
 void CustomRenderer::CreateDepthResources()
 {
@@ -993,7 +977,7 @@ void CustomRenderer::CreateTextureImageCube() {
 
     VkBuffer stagingBuffer;
     VmaAllocation stagingBufferMemory;
-    CreateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer, stagingBufferMemory);
+    mRenderer->CreateBuffer(device, memoryAllocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer, stagingBufferMemory);
 
 
     void* data;
@@ -1005,9 +989,9 @@ void CustomRenderer::CreateTextureImageCube() {
 
     CreateImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, textureImageCube, textureImageMemoryCube);
 
-    TransitionImageLayout(textureImageCube, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    CopyBufferToImage(stagingBuffer, textureImageCube, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-    TransitionImageLayout(textureImageCube, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    mRenderer->TransitionImageLayout(device, graphicsQueue, commandPool,textureImageCube, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    mRenderer->CopyBufferToImage(device, graphicsQueue, commandPool,stagingBuffer, textureImageCube, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    mRenderer->TransitionImageLayout(device, graphicsQueue, commandPool, textureImageCube, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vmaFreeMemory(memoryAllocator, stagingBufferMemory);
@@ -1024,7 +1008,7 @@ void CustomRenderer::CreateTextureImageTriangle() {
 
     VkBuffer stagingBuffer;
     VmaAllocation stagingBufferMemory;
-    CreateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer, stagingBufferMemory);
+    mRenderer->CreateBuffer(device, memoryAllocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer, stagingBufferMemory);
 
 
     void* data;
@@ -1036,9 +1020,9 @@ void CustomRenderer::CreateTextureImageTriangle() {
 
     CreateImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, textureImageTriangle, textureImageMemoryTriangle);
 
-    TransitionImageLayout(textureImageTriangle, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    CopyBufferToImage(stagingBuffer, textureImageTriangle, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-    TransitionImageLayout(textureImageTriangle, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    mRenderer->TransitionImageLayout(device, graphicsQueue, commandPool, textureImageTriangle, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    mRenderer->CopyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, textureImageTriangle, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    mRenderer->TransitionImageLayout(device, graphicsQueue, commandPool, textureImageTriangle, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vmaFreeMemory(memoryAllocator, stagingBufferMemory);
@@ -1088,7 +1072,7 @@ void CustomRenderer::CreateUniformBuffers()
 
     for (size_t i = 0; i < mSwapchain->mImages.size(); i++)
     {
-        CreateBuffer(sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, uniformBuffer[i], uniformBufferMemory[i]);
+        mRenderer->CreateBuffer(device, memoryAllocator, sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, uniformBuffer[i], uniformBufferMemory[i]);
     }
 
     cube->CreateUniformBuffers();
@@ -1131,49 +1115,6 @@ void CustomRenderer::CreateDescriptorSets()
     cube->CreateDescriptorSets();
     triangle->CreateDescriptorSets();
     sphere->CreateDescriptorSets();
-}
-
-// This function quickly copies a buffer on the GPU
-void CustomRenderer::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-    VkCommandBuffer commandBuffer = mRenderer->BeginSingleTimeCommands(device, commandPool);
-
-    VkBufferCopy copyRegion{};
-    copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-    mRenderer->EndSingleTimeCommands(device, graphicsQueue, commandBuffer, commandPool);
-}
-
-void CustomRenderer::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-    VkCommandBuffer commandBuffer = mRenderer->BeginSingleTimeCommands(device, commandPool);
-
-    VkBufferImageCopy region{};
-    region.bufferOffset = 0;
-    region.bufferRowLength = 0;
-    region.bufferImageHeight = 0;
-
-    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
-
-    region.imageOffset = { 0, 0, 0 };
-    region.imageExtent = {
-        width,
-        height,
-        1
-    };
-
-    vkCmdCopyBufferToImage(
-        commandBuffer,
-        buffer,
-        image,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        1,
-        &region
-    );
-
-    mRenderer->EndSingleTimeCommands(device, graphicsQueue, commandBuffer, commandPool);
 }
 
 void CustomRenderer::CreateCommandBuffers() {
@@ -1350,61 +1291,6 @@ void CustomRenderer::Draw() {
 void Flux::CustomRenderer::SetWindow(GLFWwindow* aWindow)
 {
     mWindow = aWindow;
-}
-
-void CustomRenderer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
-{
-    VkCommandBuffer commandBuffer = mRenderer->BeginSingleTimeCommands(device, commandPool);
-
-    VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = oldLayout;
-    barrier.newLayout = newLayout;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = image;
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-    barrier.image = image;
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-
-    VkPipelineStageFlags sourceStage;
-    VkPipelineStageFlags destinationStage;
-    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    }
-    else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    }
-    else {
-        throw std::invalid_argument("unsupported layout transition!");
-    }
-
-    vkCmdPipelineBarrier(
-        commandBuffer,
-        sourceStage, destinationStage,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &barrier
-    );
-
-    mRenderer->EndSingleTimeCommands(device, graphicsQueue, commandBuffer, commandPool);
 }
 
 void CustomRenderer::UpdateUniformBuffer(uint32_t currentImage)

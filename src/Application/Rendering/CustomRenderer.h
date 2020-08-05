@@ -114,7 +114,6 @@ namespace Flux
 		
 		VkSampler textureSampler;
 
-
 		BasicGeometry *cube;
 		BasicGeometry *triangle;
 		BasicGeometry *sphere;
@@ -160,10 +159,7 @@ namespace Flux
 
 		std::shared_ptr<Camera> mCamera;
 
-		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage properties, VkBuffer& buffer, VmaAllocation& bufferMemory);
-
-		// This function quickly copies a buffer on the GPU
-		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+		std::shared_ptr<Renderer> mRenderer;
 
 	private:
 
@@ -229,14 +225,10 @@ namespace Flux
 
 	    void CreateDescriptorSets();
 
-		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-
 		void CreateCommandBuffers();
 
 		void CreateSyncObjects();
 
-
-		void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 		void UpdateUniformBuffer(uint32_t currentImage);
 
@@ -351,7 +343,6 @@ namespace Flux
 
 		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
-		std::shared_ptr<Renderer> mRenderer;
 		
 		public:
 		std::shared_ptr<SwapchainVK> mSwapchain;
