@@ -14,6 +14,9 @@
     <Filter Include="src\Rendering">
       <UniqueIdentifier>{481fe9fb-a52b-411f-8b71-c12ac46f7bb7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Scene">
+      <UniqueIdentifier>{cff76e85-c272-4162-b6d3-de470c80f51d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\Application\Camera.h">
@@ -38,6 +41,12 @@
     <ClInclude Include="..\..\src\Application\Rendering\Model.h">
       <Filter>src\Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\Application\Scene\iScene.h">
+      <Filter>src\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Application\Scene\FirstScene.h">
+      <Filter>src\Scene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Application\Input.cpp">
@@ -60,6 +69,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\Application\Rendering\Model.cpp">
       <Filter>src\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Application\Scene\FirstScene.cpp">
+      <Filter>src\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Application\Scene\iScene.cpp">
+      <Filter>src\Scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

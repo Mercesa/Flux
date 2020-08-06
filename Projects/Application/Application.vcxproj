@@ -156,6 +156,8 @@
     <ClInclude Include="..\..\src\Application\Rendering\CustomRenderer.h" />
     <ClInclude Include="..\..\src\Application\Rendering\Mesh.h" />
     <ClInclude Include="..\..\src\Application\Rendering\Model.h" />
+    <ClInclude Include="..\..\src\Application\Scene\FirstScene.h" />
+    <ClInclude Include="..\..\src\Application\Scene\iScene.h" />
     <ClInclude Include="Model.h" />
   </ItemGroup>
   <ItemGroup>
@@ -166,6 +168,8 @@
     <ClCompile Include="..\..\src\Application\Rendering\CustomRenderer.cpp" />
     <ClCompile Include="..\..\src\Application\Rendering\Mesh.cpp" />
     <ClCompile Include="..\..\src\Application\Rendering\Model.cpp" />
+    <ClCompile Include="..\..\src\Application\Scene\FirstScene.cpp" />
+    <ClCompile Include="..\..\src\Application\Scene\iScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Shaders\basic.frag" />

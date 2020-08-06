@@ -2,6 +2,7 @@
 
 
 #include "GLFW/glfw3.h"
+#include <iostream>
 
 using namespace Flux;
 
@@ -95,6 +96,7 @@ void Input::MouseMoveInput(double xpos, double ypos)
 	{
 		lastMousePos.x = xpos;
 		lastMousePos.y = ypos;
+
 	}
 
 	relMousePos.x = xpos - lastMousePos.x;
