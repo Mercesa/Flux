@@ -18,9 +18,6 @@ Flux::CustomRenderer::CustomRenderer(std::shared_ptr<Camera> aCamera) : mCamera(
 
 void Flux::CustomRenderer::Init()
 {
-    ModelLoader loader;
-    //sponzaAsset = loader.LoadModel("Resources/Models/Sponza/sponza.obj");
-
     InitVulkan();
 }
 
@@ -925,6 +922,7 @@ void CustomRenderer::CreateCommandPool() {
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
     if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create command pool!");
@@ -1130,11 +1128,11 @@ void CustomRenderer::CreateCommandBuffers() {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
-    for (size_t i = 0; i < commandBuffers.size(); i++) {
+   /* for (size_t i = 0; i < commandBuffers.size(); i++) {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-        if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
+        if (vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
             throw std::runtime_error("failed to begin recording command buffer!");
         }
 
@@ -1152,50 +1150,50 @@ void CustomRenderer::CreateCommandBuffers() {
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
-        vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         {
-            vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, cube->GetDescriptorSet(i), 0, nullptr);
-            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineCube);
+            vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, cube->GetDescriptorSet(i), 0, nullptr);
+            vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineCube);
 
             VkBuffer vertexBuffers[] = { cube->GetVertexBuffer() };
             VkDeviceSize offsets[] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(commandBuffers[i], cube->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
+            vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
+            vkCmdBindIndexBuffer(commandBuffers[imageIndex], cube->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
-            vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(cube->GetIndexCount()), 1, 0, 0, 0);
+            vkCmdDrawIndexed(commandBuffers[imageIndex], static_cast<uint32_t>(cube->GetIndexCount()), 1, 0, 0, 0);
         }
 
         {
-            vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, triangle->GetDescriptorSet(i), 0, nullptr);
-            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineTriangle);
+            vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, triangle->GetDescriptorSet(i), 0, nullptr);
+            vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineTriangle);
 
             VkBuffer vertexBuffers[] = { triangle->GetVertexBuffer() };
             VkDeviceSize offsets[] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(commandBuffers[i], triangle->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
+            vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
+            vkCmdBindIndexBuffer(commandBuffers[imageIndex], triangle->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
-            vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(triangle->GetIndexCount()), 1, 0, 0, 0);
+            vkCmdDrawIndexed(commandBuffers[imageIndex], static_cast<uint32_t>(triangle->GetIndexCount()), 1, 0, 0, 0);
         }
 
         {
-            vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, sphere->GetDescriptorSet(i), 0, nullptr);
-            vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineSphere);
+            vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, sphere->GetDescriptorSet(i), 0, nullptr);
+            vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineSphere);
 
             VkBuffer vertexBuffers[] = { sphere->GetVertexBuffer() };
             VkDeviceSize offsets[] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(commandBuffers[i], sphere->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
+            vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
+            vkCmdBindIndexBuffer(commandBuffers[imageIndex], sphere->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
-            vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(sphere->GetIndexCount()), 1, 0, 0, 0);
+            vkCmdDrawIndexed(commandBuffers[imageIndex], static_cast<uint32_t>(sphere->GetIndexCount()), 1, 0, 0, 0);
         }
 
-        vkCmdEndRenderPass(commandBuffers[i]);
+        vkCmdEndRenderPass(commandBuffers[imageIndex]);
 
-        if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
+        if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
             throw std::runtime_error("failed to record command buffer!");
-        }
-    }
+        }*/
+    //}
 }
 
 void CustomRenderer::CreateSyncObjects() {
@@ -1241,6 +1239,71 @@ void CustomRenderer::Draw() {
 
     UpdateUniformBuffer(imageIndex);
 
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+    vkResetCommandBuffer(commandBuffers[imageIndex], 0);
+    if (vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("failed to begin recording command buffer!");
+    }
+
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = mSwapchain->mFramebuffers[imageIndex];
+    renderPassInfo.renderArea.offset = { 0, 0 };
+    renderPassInfo.renderArea.extent = mSwapchain->mExtent;
+
+    std::array<VkClearValue, 2> clearValues{};
+    clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+    clearValues[1].depthStencil = { 1.0f, 0 };
+
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassInfo.pClearValues = clearValues.data();
+
+    vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    {
+        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, cube->GetDescriptorSet(imageIndex), 0, nullptr);
+        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineCube);
+
+        VkBuffer vertexBuffers[] = { cube->GetVertexBuffer() };
+        VkDeviceSize offsets[] = { 0 };
+        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
+        vkCmdBindIndexBuffer(commandBuffers[imageIndex], cube->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
+
+        vkCmdDrawIndexed(commandBuffers[imageIndex], static_cast<uint32_t>(cube->GetIndexCount()), 1, 0, 0, 0);
+    }
+
+    {
+        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, triangle->GetDescriptorSet(imageIndex), 0, nullptr);
+        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineTriangle);
+
+        VkBuffer vertexBuffers[] = { triangle->GetVertexBuffer() };
+        VkDeviceSize offsets[] = { 0 };
+        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
+        vkCmdBindIndexBuffer(commandBuffers[imageIndex], triangle->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
+
+        vkCmdDrawIndexed(commandBuffers[imageIndex], static_cast<uint32_t>(triangle->GetIndexCount()), 1, 0, 0, 0);
+    }
+
+    {
+        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, sphere->GetDescriptorSet(imageIndex), 0, nullptr);
+        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineSphere);
+
+        VkBuffer vertexBuffers[] = { sphere->GetVertexBuffer() };
+        VkDeviceSize offsets[] = { 0 };
+        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
+        vkCmdBindIndexBuffer(commandBuffers[imageIndex], sphere->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
+
+        vkCmdDrawIndexed(commandBuffers[imageIndex], static_cast<uint32_t>(sphere->GetIndexCount()), 1, 0, 0, 0);
+    }
+
+    vkCmdEndRenderPass(commandBuffers[imageIndex]);
+
+    if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record command buffer!");
+    }
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
