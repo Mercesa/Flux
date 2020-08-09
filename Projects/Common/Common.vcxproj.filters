@@ -7,13 +7,16 @@
     <ClInclude Include="..\..\src\Common\Time\Timer.h">
       <Filter>src\Time</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Common\AssetProcessing\iTextureLoader.h">
-      <Filter>src\AssetProcessing</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\Common\AssetProcessing\AssetObjects.h">
       <Filter>src\AssetProcessing</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Common\AssetProcessing\ModelLoader.h">
+      <Filter>src\AssetProcessing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\AssetProcessing\iTextureReader.h">
+      <Filter>src\AssetProcessing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\AssetProcessing\STBTextureReader.h">
       <Filter>src\AssetProcessing</Filter>
     </ClInclude>
   </ItemGroup>
@@ -22,6 +25,15 @@
       <Filter>src\Time</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Common\AssetProcessing\ModelLoader.cpp">
+      <Filter>src\AssetProcessing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Common\AssetProcessing\STBTextureReader.cpp">
+      <Filter>src\AssetProcessing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Common\AssetProcessing\AssetManager.cpp">
+      <Filter>src\AssetProcessing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Common\AssetProcessing\AssetObjects.cpp">
       <Filter>src\AssetProcessing</Filter>
     </ClCompile>
   </ItemGroup>

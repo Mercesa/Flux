@@ -21,12 +21,16 @@
   <ItemGroup>
     <ClInclude Include="..\..\src\Common\AssetProcessing\AssetObjects.h" />
     <ClInclude Include="..\..\src\Common\AssetProcessing\iModelLoader.h" />
-    <ClInclude Include="..\..\src\Common\AssetProcessing\iTextureLoader.h" />
+    <ClInclude Include="..\..\src\Common\AssetProcessing\iTextureReader.h" />
     <ClInclude Include="..\..\src\Common\AssetProcessing\ModelLoader.h" />
+    <ClInclude Include="..\..\src\Common\AssetProcessing\STBTextureReader.h" />
     <ClInclude Include="..\..\src\Common\Time\Timer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\Common\AssetProcessing\AssetManager.cpp" />
+    <ClCompile Include="..\..\src\Common\AssetProcessing\AssetObjects.cpp" />
     <ClCompile Include="..\..\src\Common\AssetProcessing\ModelLoader.cpp" />
+    <ClCompile Include="..\..\src\Common\AssetProcessing\STBTextureReader.cpp" />
     <ClCompile Include="..\..\src\Common\Time\Timer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -138,7 +142,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glm;$(SolutionDir)src;$(SolutionDir)\External\assimp-master\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\glm;$(SolutionDir)src;$(SolutionDir)\External\assimp-master\include;$(SolutionDir)External\stb-master;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -161,7 +165,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glm;$(SolutionDir)src;$(SolutionDir)\External\assimp-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\glm;$(SolutionDir)src;$(SolutionDir)\External\assimp-master\include;;$(SolutionDir)External\stb-master;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
