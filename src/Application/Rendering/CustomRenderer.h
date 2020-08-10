@@ -28,6 +28,7 @@
 
 #include "Application/BasicGeometry.h"
 #include "common/AssetProcessing/AssetObjects.h"
+#include "Application/Scene/iScene.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -55,7 +56,7 @@ namespace Flux
 		CustomRenderer(std::shared_ptr<Camera> aCamera);
 		void Init();
 		void WaitIdle();
-		void Draw();
+		void Draw(const std::shared_ptr<iScene> aScene);
 		void SetWindow(GLFWwindow* aWindow);
 
 
@@ -131,11 +132,16 @@ namespace Flux
 		VkQueue graphicsQueue;
 		VkQueue presentQueue;
 
-		std::shared_ptr<ModelAsset> sponzaAsset;
-
 		VkRenderPass renderPass;
 		VkPipelineLayout pipelineLayout;
 		VkDescriptorSetLayout descriptorSetLayout;
+
+		VkPipeline graphicsPipelineSceneObject;
+		VkPipelineLayout pipelineLayoutSceneObjects;
+		VkDescriptorSetLayout descriptorSetLayoutSceneObjects;
+		std::vector<VkDescriptorSet> descriptorSetsSceneObjects;
+		std::vector<VkBuffer> uniformBufferSceneObject;
+		std::vector<VmaAllocation> uniformBufferMemorySceneObject;
 
 		VkPipeline graphicsPipelineCube;
 		VkPipeline graphicsPipelineTriangle;
@@ -154,6 +160,9 @@ namespace Flux
 
 		VkImageView textureImageViewCube;
 		VkImageView textureImageViewTriangle;
+
+
+		std::vector<std::shared_ptr<BufferVK>> mBuffers;
 
 		bool framebufferResized = false;
 
@@ -194,6 +203,7 @@ namespace Flux
 		void CreateRenderPass();
 
 		void CreateGraphicsPipelines();
+		void CreateGraphicsPipelineSceneObject();
 		void CreateGraphicsPipelineCube();
 		void CreateGraphicsPipelineTriangle();
 		void CreateGraphicsPipelineSphere();

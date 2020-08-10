@@ -92,7 +92,7 @@ void Flux::Application::Run()
 			break;
 		}
 		mScene->Update(tDeltaTime);
-		mRenderer->Draw();
+		mRenderer->Draw(mScene);
 		mInput->Update();
 	}
 	mScene->Cleanup();

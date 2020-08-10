@@ -1,6 +1,7 @@
 #pragma once
-#include <vulkan/vulkan.h>
-#include <VmaUsage.h>
+#include <memory>
+
+#include "Renderer/BufferVK.h"
 
 namespace Flux
 {
@@ -10,9 +11,7 @@ public:
 	Mesh() = default;
 	~Mesh() = default;
 
-	VkBuffer vertexBuffer;
-	VmaAllocation vertexBufferMemory;
-	VkBuffer indexBuffer;
-	VmaAllocation indexBufferMemory;
+	std::shared_ptr<BufferVK> mVertexBuffer;
+	std::shared_ptr<BufferVK> mIndexBuffer;
 };
 }

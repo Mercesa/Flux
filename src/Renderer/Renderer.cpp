@@ -1,6 +1,9 @@
 #include "Renderer.h"
 
+#include "Renderer/BufferVK.h"
+
 using namespace Flux;
+
 
 VkShaderModule Renderer::CreateShaderModule(VkDevice aDevice, const std::vector<char>& code) {
 
@@ -109,7 +112,6 @@ void Flux::Renderer::TransitionImageLayout(VkDevice aDevice, VkQueue aQueue, VkC
 
 void Flux::Renderer::CreateBuffer(VkDevice aDevice, VmaAllocator aAllocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage properties, VkBuffer& buffer, VmaAllocation& bufferMemory)
 {
-
 	VkBufferCreateInfo bufferInfo{};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	bufferInfo.size = size;
@@ -121,5 +123,28 @@ void Flux::Renderer::CreateBuffer(VkDevice aDevice, VmaAllocator aAllocator, VkD
 	allocInfo.usage = properties;
 
 	vmaCreateBuffer(aAllocator, &bufferInfo, &allocInfo, &buffer, &bufferMemory, nullptr);
+}
 
+std::shared_ptr<BufferVK> Renderer::CreateAndUploadBuffer(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator, VmaMemoryUsage aBufferUsage, VkBufferUsageFlags aBufferFlags, void* aData, size_t aDataSize)
+{
+	std::shared_ptr<BufferVK> tReturnBuffer = std::make_shared<BufferVK>();
+
+	VkBuffer stagingBuffer;
+	VmaAllocation stagingBufferMemory;
+	this->CreateBuffer(aDevice, aAllocator, aDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer, stagingBufferMemory);
+
+	void* data;
+	vmaMapMemory(aAllocator, stagingBufferMemory, &data);
+	memcpy(data, aData, aDataSize);
+	vmaUnmapMemory(aAllocator, stagingBufferMemory);
+
+	tReturnBuffer->mMemoryUsage = aBufferUsage;
+	tReturnBuffer->mUsageFlags = aBufferFlags | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	CreateBuffer(aDevice, aAllocator, aDataSize, tReturnBuffer->mUsageFlags, tReturnBuffer->mMemoryUsage, tReturnBuffer->mBuffer, tReturnBuffer->mAllocation);
+	CopyBuffer(aDevice, aQueue, aCmdPool, stagingBuffer, tReturnBuffer->mBuffer, aDataSize);
+
+	vkDestroyBuffer(aDevice, stagingBuffer, nullptr);
+	vmaFreeMemory(aAllocator, stagingBufferMemory);
+
+	return tReturnBuffer;
 }

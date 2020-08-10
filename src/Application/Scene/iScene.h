@@ -1,10 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <vector>
+
 namespace Flux
 {
 	class Camera;
 	class Input;
+	class iSceneObject;
 	class iScene
 	{
 	public:
@@ -16,10 +19,13 @@ namespace Flux
 		virtual void Update(float aDt) = 0;
 		virtual void Cleanup() = 0;
 
-		const std::shared_ptr<Camera> GetCamera();
+		const std::shared_ptr<Camera> GetCamera() const;
+		const std::vector<std::shared_ptr<iSceneObject>> GetSceneObjects() const;
 
 	protected:
 		std::shared_ptr<Camera> mCamera;
 		std::shared_ptr<Input> mInput;
+		std::vector<std::shared_ptr<iSceneObject>> mSceneObjects;
+
 	};
 }

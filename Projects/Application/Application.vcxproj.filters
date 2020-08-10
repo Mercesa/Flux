@@ -37,7 +37,6 @@
     <ClInclude Include="..\..\src\Application\Rendering\Mesh.h">
       <Filter>src\Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="Model.h" />
     <ClInclude Include="..\..\src\Application\Rendering\Model.h">
       <Filter>src\Rendering</Filter>
     </ClInclude>
@@ -45,6 +44,9 @@
       <Filter>src\Scene</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Application\Scene\FirstScene.h">
+      <Filter>src\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Application\Scene\iSceneObject.h">
       <Filter>src\Scene</Filter>
     </ClInclude>
   </ItemGroup>
@@ -100,6 +102,12 @@
       <Filter>Resources\Shaders</Filter>
     </None>
     <None Include="Resources\Shaders\basic.vert">
+      <Filter>Resources\Shaders</Filter>
+    </None>
+    <None Include="Resources\Shaders\basicModel.frag">
+      <Filter>Resources\Shaders</Filter>
+    </None>
+    <None Include="Resources\Shaders\basicModel.vert">
       <Filter>Resources\Shaders</Filter>
     </None>
   </ItemGroup>

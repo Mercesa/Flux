@@ -3,12 +3,14 @@
 #include <stdexcept>
 #include <cassert>
 #include <vector>
+#include <memory>
 
 #include "vulkan/vulkan.h"
 #include <VmaUsage.h>
 
 namespace Flux
 {
+    class BufferVK;
 	class Renderer
 	{
     public:
@@ -64,5 +66,7 @@ namespace Flux
 
             this->EndSingleTimeCommands(aDevice, aQueue, commandBuffer, aCmdPool);
         }
+
+        std::shared_ptr<BufferVK> CreateAndUploadBuffer(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator, VmaMemoryUsage aBufferUsage, VkBufferUsageFlags aBufferFlags, void* aData, size_t aDataSize);
 	};
 };

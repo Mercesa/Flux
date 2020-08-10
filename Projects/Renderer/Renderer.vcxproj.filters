@@ -40,5 +40,8 @@
     <ClInclude Include="..\..\src\Renderer\SwapchainVK.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\Renderer\BufferVK.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

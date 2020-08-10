@@ -168,6 +168,7 @@
     <ClInclude Include="..\..\..\..\..\VulkanSDK\1.2.141.2\Include\spirv_cross\spirv_reflect.hpp" />
     <ClInclude Include="..\..\External\SPIRV-Reflect-master\spirv_reflect.h" />
     <ClInclude Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.h" />
+    <ClInclude Include="..\..\src\Renderer\BufferVK.h" />
     <ClInclude Include="..\..\src\Renderer\Reflection.h" />
     <ClInclude Include="..\..\src\Renderer\Renderer.h" />
     <ClInclude Include="..\..\src\Renderer\SwapchainVK.h" />
