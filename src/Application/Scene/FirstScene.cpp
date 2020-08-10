@@ -5,7 +5,7 @@
 
 #include "Application/Camera.h"
 #include "Application/Input.h"
-#include "Common/AssetProcessing/ModelLoader.h"
+#include "Common/AssetProcessing/ModelReaderAssimp.h"
 #include "iSceneObject.h"
 
 Flux::FirstScene::FirstScene(std::shared_ptr<Input> aInput) : 
@@ -24,7 +24,7 @@ void Flux::FirstScene::Init()
 	mCamera->MouseSensitivity = 1.0f;
 	mCamera->MovementSpeed = 5.0f;
 
-	std::shared_ptr<ModelLoader> tLoader = std::make_shared<ModelLoader>();
+	std::shared_ptr<ModelReaderAssimp> tLoader = std::make_shared<ModelReaderAssimp>();
 	auto tAsset = tLoader->LoadModel("Resources\\Models\\Sponza\\sponza.obj");
 	
 

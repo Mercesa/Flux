@@ -5,7 +5,7 @@
 #include "Application/Scene/iSceneObject.h"
 
 #include "Renderer/SwapchainVK.h"
-#include "Common/AssetProcessing/ModelLoader.h"
+#include "Common/AssetProcessing/ModelReaderAssimp.h"
 
 
 #define STB_IMAGE_IMPLEMENTATION
