@@ -7,7 +7,7 @@ struct aiMesh;
 
 namespace Flux
 {
-    class ModelLoader :
+    class ModelReaderAssimp :
         public iModelLoader
     {
     public:

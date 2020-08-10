@@ -1,4 +1,4 @@
-#include "ModelLoader.h"
+#include "ModelReaderAssimp.h"
 
 #include <fstream>
 #include <string>
@@ -148,7 +148,7 @@ MaterialAsset ProcessMaterial(aiMesh* a_Mesh, const aiScene* a_Scene)
 
 
 // Process mesh
-std::shared_ptr<MeshAsset> ModelLoader::ProcessMesh(aiMesh* const a_Mesh, const aiScene* const a_Scene)
+std::shared_ptr<MeshAsset> ModelReaderAssimp::ProcessMesh(aiMesh* const a_Mesh, const aiScene* const a_Scene)
 {
 	std::vector<VertexData> vertices = std::move(ProcessVertices(a_Mesh));
 	std::vector<uint32_t> indices = std::move(ProcessIndices(a_Mesh));
@@ -166,7 +166,7 @@ std::shared_ptr<MeshAsset> ModelLoader::ProcessMesh(aiMesh* const a_Mesh, const 
 }
 
 // This function will be called recursively if there is more than 1 node in a scene
-void ModelLoader::ProcessNode(aiNode* const a_Node, const aiScene* const a_Scene, std::vector<std::shared_ptr<MeshAsset>>& aData)
+void ModelReaderAssimp::ProcessNode(aiNode* const a_Node, const aiScene* const a_Scene, std::vector<std::shared_ptr<MeshAsset>>& aData)
 {
 	// Process meshes in node
 	for (unsigned int i = 0; i < a_Node->mNumMeshes; i++)
@@ -181,7 +181,7 @@ void ModelLoader::ProcessNode(aiNode* const a_Node, const aiScene* const a_Scene
 	}
 }
 
-std::shared_ptr<ModelAsset> Flux::ModelLoader::LoadModel(std::string aFilepath)
+std::shared_ptr<ModelAsset> Flux::ModelReaderAssimp::LoadModel(std::string aFilepath)
 {
 	std::shared_ptr<ModelAsset> tModelAsset;
 
