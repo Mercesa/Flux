@@ -2,21 +2,26 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <filesystem>
 
 #include <glm/gtx/common.hpp>
 
 namespace Flux
 {
+	class ErrorAssetFileNotFound : public std::exception
+	{
+		std::string mMessage;
+
+	public:
+		ErrorAssetFileNotFound(std::filesystem::path const &aFilepath);
+		virtual const char *what() const noexcept override;
+	};
+
 	struct TextureAsset
 	{
-		TextureAsset() : mWidth(0), mHeight(0), mAmountOfChannels(0)
-		{}
-
-		std::string mFilePath; // might be better idea to use cpp17 filepath(?)
-		std::vector<char> mData;
+		std::vector<unsigned char> mData;
 		uint32_t mWidth;
 		uint32_t mHeight;
-		uint32_t mAmountOfChannels;
 	};
 
 	struct MaterialAsset

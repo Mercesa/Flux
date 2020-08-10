@@ -58,7 +58,7 @@ void Flux::FirstScene::Update(float aDt)
 		mCamera->ProcessKeyboard(Flux::Camera_Movement::RIGHT, aDt);
 	}
 
-	mCamera->ProcessMouseMovement(mInput->GetRelMousePos().x, mInput->GetRelMousePos().y, true);
+	mCamera->ProcessMouseMovement(static_cast<float>(mInput->GetRelMousePos().x), static_cast<float>(mInput->GetRelMousePos().y), true);
 }
 
 void Flux::FirstScene::Cleanup()
