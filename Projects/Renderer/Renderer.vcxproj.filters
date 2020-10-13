@@ -43,5 +43,8 @@
     <ClInclude Include="..\..\src\Renderer\BufferVK.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\Renderer\TextureVK.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

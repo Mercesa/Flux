@@ -172,6 +172,7 @@
     <ClInclude Include="..\..\src\Renderer\Reflection.h" />
     <ClInclude Include="..\..\src\Renderer\Renderer.h" />
     <ClInclude Include="..\..\src\Renderer\SwapchainVK.h" />
+    <ClInclude Include="..\..\src\Renderer\TextureVK.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

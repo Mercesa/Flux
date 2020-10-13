@@ -19,17 +19,18 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\Common\AssetProcessing\AssetManager.h" />
     <ClInclude Include="..\..\src\Common\AssetProcessing\AssetObjects.h" />
     <ClInclude Include="..\..\src\Common\AssetProcessing\iModelLoader.h" />
     <ClInclude Include="..\..\src\Common\AssetProcessing\iTextureReader.h" />
-    <ClInclude Include="..\..\src\Common\AssetProcessing\ModelLoader.h" />
+    <ClInclude Include="..\..\src\Common\AssetProcessing\ModelReaderAssimp.h" />
     <ClInclude Include="..\..\src\Common\AssetProcessing\STBTextureReader.h" />
     <ClInclude Include="..\..\src\Common\Time\Timer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Common\AssetProcessing\AssetManager.cpp" />
     <ClCompile Include="..\..\src\Common\AssetProcessing\AssetObjects.cpp" />
-    <ClCompile Include="..\..\src\Common\AssetProcessing\ModelLoader.cpp" />
+    <ClCompile Include="..\..\src\Common\AssetProcessing\ModelReaderAssimp.cpp" />
     <ClCompile Include="..\..\src\Common\AssetProcessing\STBTextureReader.cpp" />
     <ClCompile Include="..\..\src\Common\Time\Timer.cpp" />
   </ItemGroup>

@@ -154,6 +154,7 @@
     <ClInclude Include="..\..\src\Application\Camera.h" />
     <ClInclude Include="..\..\src\Application\Input.h" />
     <ClInclude Include="..\..\src\Application\Rendering\CustomRenderer.h" />
+    <ClInclude Include="..\..\src\Application\Rendering\Material.h" />
     <ClInclude Include="..\..\src\Application\Rendering\Mesh.h" />
     <ClInclude Include="..\..\src\Application\Rendering\Model.h" />
     <ClInclude Include="..\..\src\Application\Scene\FirstScene.h" />
@@ -166,6 +167,7 @@
     <ClCompile Include="..\..\src\Application\Input.cpp" />
     <ClCompile Include="..\..\src\Application\Main.cpp" />
     <ClCompile Include="..\..\src\Application\Rendering\CustomRenderer.cpp" />
+    <ClCompile Include="..\..\src\Application\Rendering\Material.cpp" />
     <ClCompile Include="..\..\src\Application\Rendering\Mesh.cpp" />
     <ClCompile Include="..\..\src\Application\Rendering\Model.cpp" />
     <ClCompile Include="..\..\src\Application\Scene\FirstScene.cpp" />

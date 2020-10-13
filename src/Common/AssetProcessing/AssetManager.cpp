@@ -27,13 +27,11 @@ namespace Flux
 				if (tTextureReader->CanRead(aFilepath))
 				{
 					mLoadedTextures[aFilepath.string()] = tTextureReader->LoadTexture(aFilepath);
-					goto TextureLoaded;
+					return mLoadedTextures[aFilepath.string()];
 				}
 			}
 			throw ErrorUnsupportedAssetType(aFilepath);
 		}
-
-TextureLoaded:
-		return mLoadedTextures[aFilepath.string()];
+		return nullptr;
 	}
 }

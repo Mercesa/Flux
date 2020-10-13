@@ -96,6 +96,7 @@ void Flux::Application::Run()
 		mInput->Update();
 	}
 	mScene->Cleanup();
+	
 	mRenderer->WaitIdle();
-
+	mRenderer->Cleanup();
 }

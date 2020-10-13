@@ -1,6 +1,7 @@
 #include "Renderer.h"
 
 #include "Renderer/BufferVK.h"
+#include "Renderer/TextureVK.h"
 
 using namespace Flux;
 
@@ -146,5 +147,79 @@ std::shared_ptr<BufferVK> Renderer::CreateAndUploadBuffer(VkDevice aDevice, VkQu
 	vkDestroyBuffer(aDevice, stagingBuffer, nullptr);
 	vmaFreeMemory(aAllocator, stagingBufferMemory);
 
-	return tReturnBuffer;
+	return std::move(tReturnBuffer);
+}
+
+
+void Renderer::CreateImage(VmaAllocator aAllocator, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage properties, VkImage& image, VmaAllocation& imageMemory) {
+	VkImageCreateInfo imageInfo{};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.extent.width = width;
+	imageInfo.extent.height = height;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.format = format;
+	imageInfo.tiling = tiling;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageInfo.usage = usage;
+	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	VmaAllocationCreateInfo allocInfo = {};
+	allocInfo.usage = properties;
+
+	vmaCreateImage(aAllocator, &imageInfo, &allocInfo, &image, &imageMemory, nullptr);
+}
+
+VkImageView Renderer::CreateImageView(VkDevice aDevice, VkImage image, VkFormat format, VkImageAspectFlags aspectMask) {
+	VkImageViewCreateInfo viewInfo{};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = image;
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.format = format;
+	viewInfo.subresourceRange.aspectMask = aspectMask;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	VkImageView imageView;
+	if (vkCreateImageView(aDevice, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create texture image view!");
+	}
+
+	return imageView;
+}
+
+std::shared_ptr<TextureVK> Renderer::CreateAndUploadTexture(
+	VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator,
+	uint32_t aWidth, uint32_t aHeight, uint32_t aImgSize, unsigned char* aImageData,
+	VkFormat aFormat ) {
+	
+	std::shared_ptr<TextureVK> tReturnTexture = std::make_shared<TextureVK>();
+
+	VkBuffer stagingBuffer;
+	VmaAllocation stagingBufferMemory;
+	CreateBuffer(aDevice, aAllocator, aImgSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer, stagingBufferMemory);
+
+
+	void* data;
+	vmaMapMemory(aAllocator, stagingBufferMemory, &data);
+	memcpy(data, aImageData, static_cast<size_t>(aImgSize));
+	vmaUnmapMemory(aAllocator, stagingBufferMemory);
+
+	CreateImage(aAllocator, aWidth, aHeight, aFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, tReturnTexture->mImage, tReturnTexture->mAllocation);
+
+	TransitionImageLayout(aDevice, aQueue, aCmdPool, tReturnTexture->mImage, aFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	CopyBufferToImage(aDevice, aQueue, aCmdPool, stagingBuffer, tReturnTexture->mImage, aWidth, aHeight);
+	TransitionImageLayout(aDevice, aQueue, aCmdPool, tReturnTexture->mImage, aFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	tReturnTexture->mView = CreateImageView(aDevice, tReturnTexture->mImage, aFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+
+	vkDestroyBuffer(aDevice, stagingBuffer, nullptr);
+	vmaFreeMemory(aAllocator, stagingBufferMemory);
+
+	return std::move(tReturnTexture);
 }

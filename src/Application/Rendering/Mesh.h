@@ -11,7 +11,7 @@ public:
 	Mesh() = default;
 	~Mesh() = default;
 
-	std::shared_ptr<BufferVK> mVertexBuffer;
-	std::shared_ptr<BufferVK> mIndexBuffer;
+	std::shared_ptr<BufferVK> mVertexBuffer = nullptr;
+	std::shared_ptr<BufferVK> mIndexBuffer = nullptr;
 };
 }

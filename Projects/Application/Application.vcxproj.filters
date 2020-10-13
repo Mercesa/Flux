@@ -49,6 +49,9 @@
     <ClInclude Include="..\..\src\Application\Scene\iSceneObject.h">
       <Filter>src\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\Application\Rendering\Material.h">
+      <Filter>src\Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Application\Input.cpp">
@@ -77,6 +80,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\Application\Scene\iScene.cpp">
       <Filter>src\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Application\Rendering\Material.cpp">
+      <Filter>src\Rendering</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

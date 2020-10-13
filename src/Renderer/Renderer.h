@@ -11,6 +11,7 @@
 namespace Flux
 {
     class BufferVK;
+    class TextureVK;
 	class Renderer
 	{
     public:
@@ -68,5 +69,15 @@ namespace Flux
         }
 
         std::shared_ptr<BufferVK> CreateAndUploadBuffer(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator, VmaMemoryUsage aBufferUsage, VkBufferUsageFlags aBufferFlags, void* aData, size_t aDataSize);
+
+
+        void CreateImage(VmaAllocator aAllocator, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage properties, VkImage& image, VmaAllocation& imageMemory);
+
+        VkImageView CreateImageView(VkDevice aDevice, VkImage image, VkFormat format, VkImageAspectFlags aspectMask);
+
+        std::shared_ptr<TextureVK> CreateAndUploadTexture(
+            VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator,
+            uint32_t aWidth, uint32_t aHeight, uint32_t aImgSize, unsigned char* aImageData,
+            VkFormat aFormat);
 	};
 };

@@ -10,22 +10,22 @@
     <ClInclude Include="..\..\src\Common\AssetProcessing\AssetObjects.h">
       <Filter>src\AssetProcessing</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Common\AssetProcessing\ModelLoader.h">
-      <Filter>src\AssetProcessing</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\Common\AssetProcessing\iTextureReader.h">
       <Filter>src\AssetProcessing</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Common\AssetProcessing\STBTextureReader.h">
       <Filter>src\AssetProcessing</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\Common\AssetProcessing\ModelReaderAssimp.h">
+      <Filter>src\AssetProcessing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\AssetProcessing\AssetManager.h">
+      <Filter>src\AssetProcessing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Common\Time\Timer.cpp">
       <Filter>src\Time</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\Common\AssetProcessing\ModelLoader.cpp">
-      <Filter>src\AssetProcessing</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Common\AssetProcessing\STBTextureReader.cpp">
       <Filter>src\AssetProcessing</Filter>
@@ -34,6 +34,9 @@
       <Filter>src\AssetProcessing</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Common\AssetProcessing\AssetObjects.cpp">
+      <Filter>src\AssetProcessing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Common\AssetProcessing\ModelReaderAssimp.cpp">
       <Filter>src\AssetProcessing</Filter>
     </ClCompile>
   </ItemGroup>

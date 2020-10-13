@@ -30,7 +30,9 @@
 #include "common/AssetProcessing/AssetObjects.h"
 #include "Application/Scene/iScene.h"
 
-const int MAX_FRAMES_IN_FLIGHT = 2;
+#include "Renderer/TextureVK.h"
+
+const int MAX_FRAMES_IN_FLIGHT = 1;
 
 const std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
@@ -57,6 +59,7 @@ namespace Flux
 		void Init();
 		void WaitIdle();
 		void Draw(const std::shared_ptr<iScene> aScene);
+		void Cleanup();
 		void SetWindow(GLFWwindow* aWindow);
 
 
@@ -115,9 +118,9 @@ namespace Flux
 		
 		VkSampler textureSampler;
 
-		BasicGeometry *cube;
-		BasicGeometry *triangle;
-		BasicGeometry *sphere;
+		//BasicGeometry *cube;
+		//BasicGeometry *triangle;
+		//BasicGeometry *sphere;
 
 		std::vector<VkBuffer> uniformBuffer;
 		std::vector<VmaAllocation> uniformBufferMemory;
@@ -135,6 +138,8 @@ namespace Flux
 		VkRenderPass renderPass;
 		VkPipelineLayout pipelineLayout;
 		VkDescriptorSetLayout descriptorSetLayout;
+
+		VkDescriptorSetLayout descriptorSetLayoutSceneObjectsTextures;
 
 		VkPipeline graphicsPipelineSceneObject;
 		VkPipelineLayout pipelineLayoutSceneObjects;
@@ -158,6 +163,10 @@ namespace Flux
 		std::vector<VkFence> imagesInFlight;
 		size_t currentFrame = 0;
 
+		std::vector<std::shared_ptr<BufferVK>> mSceneBuffers;
+		std::vector<std::shared_ptr<TextureVK>> mSceneTextures;
+		std::vector<std::shared_ptr<VkDescriptorSet>> mSceneSets;
+
 		VkImageView textureImageViewCube;
 		VkImageView textureImageViewTriangle;
 
@@ -178,7 +187,6 @@ namespace Flux
 
 		void CleanupSwapChain();
 
-		void Cleanup();
 
 		void RecreateSwapChain();
 

@@ -4,12 +4,13 @@
 
 namespace Flux
 {
-	class BufferVK
+	class TextureVK
 	{
 	public:
-		VkBuffer mBuffer;
-		VkBufferUsageFlags mUsageFlags;
+		VkImage mImage;
+		VkImageView mView;
+		VkFormat mFormat;
 		VmaAllocation mAllocation;
-		VmaMemoryUsage mMemoryUsage;
 	};
 }
+
