@@ -32,6 +32,10 @@ namespace Flux
 			}
 			throw ErrorUnsupportedAssetType(aFilepath);
 		}
+		else
+		{
+			return mLoadedTextures[aFilepath.string()];
+		}
 		return nullptr;
 	}
 }
