@@ -20,6 +20,7 @@ namespace Flux
 
 	std::shared_ptr<TextureAsset> AssetManager::LoadTexture(std::filesystem::path const &aFilepath)
 	{
+		// Find a texture, if its found, return existing texture. Otherwise load it in.
 		if (mLoadedTextures.find(aFilepath.string()) == mLoadedTextures.end())
 		{
 			for (auto tTextureReader : mTextureReaders)
