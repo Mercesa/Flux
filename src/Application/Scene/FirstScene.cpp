@@ -53,7 +53,6 @@ void Flux::FirstScene::Init()
 	}
 }
 
-
 void Flux::FirstScene::Update(float aDt)
 {
 	if (mInput->GetKeyHeld(GLFW_KEY_W))

@@ -157,6 +157,7 @@
     <ClInclude Include="..\..\src\Application\Rendering\Material.h" />
     <ClInclude Include="..\..\src\Application\Rendering\Mesh.h" />
     <ClInclude Include="..\..\src\Application\Rendering\Model.h" />
+    <ClInclude Include="..\..\src\Application\Rendering\RenderingResourceManager.h" />
     <ClInclude Include="..\..\src\Application\Scene\FirstScene.h" />
     <ClInclude Include="..\..\src\Application\Scene\iScene.h" />
     <ClInclude Include="..\..\src\Application\Scene\iSceneObject.h" />
@@ -170,6 +171,7 @@
     <ClCompile Include="..\..\src\Application\Rendering\Material.cpp" />
     <ClCompile Include="..\..\src\Application\Rendering\Mesh.cpp" />
     <ClCompile Include="..\..\src\Application\Rendering\Model.cpp" />
+    <ClCompile Include="..\..\src\Application\Rendering\RenderingResourceManager.cpp" />
     <ClCompile Include="..\..\src\Application\Scene\FirstScene.cpp" />
     <ClCompile Include="..\..\src\Application\Scene\iScene.cpp" />
   </ItemGroup>

@@ -15,7 +15,7 @@ namespace Flux
 		std::vector<VkImageView> mImageViews;
 		VkFormat mImageFormat;
 		VkExtent2D mExtent;
-		
+
 		VkImage depthImage;
 		VmaAllocation depthImageMemory;
 		VkImageView depthImageView;

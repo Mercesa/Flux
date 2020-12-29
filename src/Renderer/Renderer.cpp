@@ -150,7 +150,6 @@ std::shared_ptr<BufferVK> Renderer::CreateAndUploadBuffer(VkDevice aDevice, VkQu
 	return std::move(tReturnBuffer);
 }
 
-
 void Renderer::CreateImage(VmaAllocator aAllocator, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage properties, VkImage& image, VmaAllocation& imageMemory) {
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;

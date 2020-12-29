@@ -19,6 +19,7 @@ Flux::CustomRenderer::CustomRenderer(std::shared_ptr<Camera> aCamera) : mCamera(
 {
     mRenderer = std::make_shared<Renderer>();
     mSwapchain = std::make_shared<SwapchainVK>();
+    mResourceManager = std::unique_ptr<RenderingResourceManager>(new RenderingResourceManager());
 }
 
 void Flux::CustomRenderer::Init()
@@ -104,7 +105,7 @@ void CustomRenderer::CustomRenderer:: CleanupSwapChain() {
     }
 
     vkFreeDescriptorSets(device, descriptorPool, descriptorSetsSceneObjects.size(), descriptorSetsSceneObjects.data());
-    
+
 }
 
 void CustomRenderer::Cleanup() {
@@ -509,7 +510,7 @@ void CustomRenderer::CreateGraphicsPipelineSceneObject()
 
     vertexAttrDescriptions[0].binding = 0;
     vertexAttrDescriptions[0].location = 0;
-     vertexAttrDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexAttrDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
     vertexAttrDescriptions[0].offset = offsetof(VertexData, position);
 
     vertexAttrDescriptions[1].binding = 0;
@@ -594,9 +595,11 @@ void CustomRenderer::CreateGraphicsPipelineSceneObject()
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.setLayoutCount = 2;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayoutSceneObjects;
+
+    VkDescriptorSetLayout layouts[2] = { descriptorSetLayout, descriptorSetLayoutSceneObjects };
+    pipelineLayoutInfo.pSetLayouts = layouts;
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo,nullptr, &pipelineLayoutSceneObjects) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
@@ -736,7 +739,6 @@ void CustomRenderer::CreateGraphicsPipelineCube() {
     //    throw std::runtime_error("failed to create pipeline layout!");
     //}
 
-
     //VkPipelineDepthStencilStateCreateInfo depthStencil{};
     //depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     //depthStencil.depthTestEnable = VK_TRUE;
@@ -748,7 +750,6 @@ void CustomRenderer::CreateGraphicsPipelineCube() {
     //depthStencil.stencilTestEnable = VK_FALSE;
     //depthStencil.front = {}; // Optional
     //depthStencil.back = {}; // Optional
-
 
     //VkGraphicsPipelineCreateInfo pipelineInfo{};
     //pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -1038,49 +1039,60 @@ void CustomRenderer::CreateGraphicsPipelineSphere() {
 
 void CustomRenderer::CreateDescriptorSetLayout()
 {
-    VkDescriptorSetLayoutBinding uboLayoutBindingCamera{};
-    uboLayoutBindingCamera.binding = 0;
-    uboLayoutBindingCamera.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uboLayoutBindingCamera.descriptorCount = 1;
-    uboLayoutBindingCamera.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    uboLayoutBindingCamera.pImmutableSamplers = nullptr;
-
-    VkDescriptorSetLayoutBinding uboLayoutBindingModel{};
-    uboLayoutBindingModel.binding = 1;
-    uboLayoutBindingModel.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uboLayoutBindingModel.descriptorCount = 1;
-    uboLayoutBindingModel.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    uboLayoutBindingModel.pImmutableSamplers = nullptr;
-
-    VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-    samplerLayoutBinding.binding = 2;
-    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerLayoutBinding.descriptorCount = 1;
-    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    samplerLayoutBinding.pImmutableSamplers = nullptr;
-
-    std::array<VkDescriptorSetLayoutBinding, 3> bindings = { uboLayoutBindingCamera, uboLayoutBindingModel, samplerLayoutBinding };
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-    layoutInfo.pBindings = bindings.data();
-
-    if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout))
     {
-        throw std::runtime_error("failed to create descriptor set layout!");
+        VkDescriptorSetLayoutBinding uboLayoutBindingCamera{};
+        uboLayoutBindingCamera.binding = 0;
+        uboLayoutBindingCamera.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBindingCamera.descriptorCount = 1;
+        uboLayoutBindingCamera.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uboLayoutBindingCamera.pImmutableSamplers = nullptr;
+
+        VkDescriptorSetLayoutBinding uboLayoutBindingModel{};
+        uboLayoutBindingModel.binding = 1;
+        uboLayoutBindingModel.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBindingModel.descriptorCount = 1;
+        uboLayoutBindingModel.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uboLayoutBindingModel.pImmutableSamplers = nullptr;
+
+        std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBindingCamera, uboLayoutBindingModel };
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout))
+        {
+            throw std::runtime_error("failed to create descriptor set layout!");
+        }
     }
 
-
-    std::array<VkDescriptorSetLayoutBinding, 2> bindingsSceneObject = { uboLayoutBindingCamera, uboLayoutBindingModel };
-    VkDescriptorSetLayoutCreateInfo layoutInfoSceneObject{};
-    layoutInfoSceneObject.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfoSceneObject.bindingCount = static_cast<uint32_t>(bindingsSceneObject.size());
-    layoutInfoSceneObject.pBindings = bindingsSceneObject.data();
-
-    if (vkCreateDescriptorSetLayout(device, &layoutInfoSceneObject, nullptr, &descriptorSetLayoutSceneObjects))
     {
-        throw std::runtime_error("failed to create descriptor set layout!");
+        VkDescriptorSetLayoutBinding textureLayoutBinding{};
+        textureLayoutBinding.binding = 0;
+        textureLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        textureLayoutBinding.descriptorCount = 1;
+        textureLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        textureLayoutBinding.pImmutableSamplers = nullptr;
+
+        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+        samplerLayoutBinding.binding = 1;
+        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+        samplerLayoutBinding.descriptorCount = 1;
+        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        samplerLayoutBinding.pImmutableSamplers = nullptr;
+
+        std::array<VkDescriptorSetLayoutBinding, 2> bindingsSceneObject = { textureLayoutBinding, samplerLayoutBinding };
+        VkDescriptorSetLayoutCreateInfo layoutInfoSceneObject{};
+        layoutInfoSceneObject.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfoSceneObject.bindingCount = static_cast<uint32_t>(bindingsSceneObject.size());
+        layoutInfoSceneObject.pBindings = bindingsSceneObject.data();
+
+        if (vkCreateDescriptorSetLayout(device, &layoutInfoSceneObject, nullptr, &descriptorSetLayoutSceneObjects))
+        {
+            throw std::runtime_error("failed to create descriptor set layout!");
+        }
     }
+
 }
 
 uint32_t CustomRenderer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
@@ -1161,8 +1173,8 @@ void CustomRenderer::CreateImage(uint32_t width, uint32_t height, VkFormat forma
 void CustomRenderer::CreateDepthResources()
 {
     VkFormat depthFormat = FindDepthFormat();
-    CreateImage(mSwapchain->mExtent.width, mSwapchain->mExtent.height, depthFormat, 
-    VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, 
+    CreateImage(mSwapchain->mExtent.width, mSwapchain->mExtent.height, depthFormat,
+    VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY,
     mSwapchain->depthImage, mSwapchain->depthImageMemory);
     mSwapchain->depthImageView = CreateImageView(mSwapchain->depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
@@ -1314,7 +1326,7 @@ void CustomRenderer::CreateDescriptorPool()
     descriptorPoolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
     descriptorPoolCreateInfo.maxSets = 1000;
     descriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    
+
     if (vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &descriptorPool) != VK_SUCCESS)
     {
         throw std::runtime_error(" Failed to create descriptor pool");
@@ -1328,7 +1340,7 @@ void CustomRenderer::CreateDescriptorSets()
     //triangle->CreateDescriptorSets();
     //sphere->CreateDescriptorSets();
 
-    std::vector<VkDescriptorSetLayout> layouts(mSwapchain->mImages.size(), descriptorSetLayoutSceneObjects);
+    std::vector<VkDescriptorSetLayout> layouts(mSwapchain->mImages.size(), descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = descriptorPool;
@@ -1387,7 +1399,6 @@ void CustomRenderer::CreateCommandBuffers() {
     if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
-    
 }
 
 void CustomRenderer::CreateSyncObjects() {
@@ -1426,35 +1437,94 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
             const auto tAsset = object->mAsset;
 
             object->mMesh->mVertexBuffer = mRenderer->CreateAndUploadBuffer(
-                device, graphicsQueue, commandPool, memoryAllocator, 
-                VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+                device, graphicsQueue, commandPool, memoryAllocator,
+                VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 tAsset->mVertexData.data(), sizeof(tAsset->mVertexData[0]) * tAsset->mVertexData.size());
 
             object->mMesh->mIndexBuffer = mRenderer->CreateAndUploadBuffer(
-                device, graphicsQueue, commandPool, memoryAllocator, 
-                VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
+                device, graphicsQueue, commandPool, memoryAllocator,
+                VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                 tAsset->mIndices.data(), sizeof(tAsset->mIndices[0]) * tAsset->mIndices.size());
 
             mSceneBuffers.push_back(object->mMesh->mVertexBuffer);
             mSceneBuffers.push_back(object->mMesh->mIndexBuffer);
         }
 
-
         if (object->mMaterial->mTextureAsset != nullptr && object->mMaterial->mTextureVK == nullptr)
         {
-            const auto tAsset = object->mMaterial->mTextureAsset;
-            object->mMaterial->mTextureVK = mRenderer->CreateAndUploadTexture(
-                device, graphicsQueue, commandPool, memoryAllocator, 
-                tAsset->mWidth, tAsset->mHeight, 
-                tAsset->mData.size(), 
-                tAsset->mData.data(), VK_FORMAT_R8G8B8A8_SRGB);
-            mSceneTextures.push_back(object->mMaterial->mTextureVK);
+            const auto& tAsset = object->mMaterial->mTextureAsset;
 
+            auto queryResultTexture = mResourceManager->QueryTextureAssetRegistered(tAsset);
+            if (!queryResultTexture.has_value())
+            {
+                object->mMaterial->mTextureVK = mRenderer->CreateAndUploadTexture(
+                    device, graphicsQueue, commandPool, memoryAllocator,
+                    tAsset->mWidth, tAsset->mHeight,
+                    tAsset->mData.size(),
+                    tAsset->mData.data(), VK_FORMAT_R8G8B8A8_UNORM);
+                mSceneTextures.push_back(object->mMaterial->mTextureVK);
+                mResourceManager->RegisterTextureData({ tAsset, object->mMaterial->mTextureVK });
+            }
+            else
+            {
+                object->mMaterial->mTextureVK = queryResultTexture.value();
+            }
+
+            auto queryResultMaterial = mResourceManager->QueryMaterialAssetRegistered(object->mMaterial);
+            if (!queryResultMaterial)
+            {
+                std::vector<VkDescriptorSetLayout> layouts = { descriptorSetLayoutSceneObjects };
+                VkDescriptorSetAllocateInfo allocInfo{};
+                allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+                allocInfo.descriptorPool = descriptorPool;
+                allocInfo.descriptorSetCount = 1;
+                allocInfo.pSetLayouts = layouts.data();
+
+                std::vector<VkDescriptorSet> mSet = { object->mMaterial->mDescriptorSet };
+                if (vkAllocateDescriptorSets(device, &allocInfo, mSet.data()) != VK_SUCCESS)
+                {
+                    throw std::runtime_error("Failed to allocate descriptor sets!");
+                }
+
+				VkDescriptorImageInfo albedoImage{};
+                albedoImage.imageView = object->mMaterial->mTextureVK->mView;
+                albedoImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+                VkDescriptorImageInfo samplerInfo{};
+                samplerInfo.sampler = textureSampler;
+
+				std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+				descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrites[0].dstSet = mSet[0];
+				descriptorWrites[0].dstBinding = 0;
+				descriptorWrites[0].dstArrayElement = 0;
+				descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+				descriptorWrites[0].descriptorCount = 1;
+				descriptorWrites[0].pImageInfo = &albedoImage;
+
+				descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrites[1].dstSet = mSet[0];
+				descriptorWrites[1].dstBinding = 1;
+				descriptorWrites[1].dstArrayElement = 0;
+				descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+				descriptorWrites[1].descriptorCount = 1;
+                descriptorWrites[1].pImageInfo = &samplerInfo;
+
+				vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+                object->mMaterial->mDescriptorSet = mSet[0];
+
+                //TODO DELETE ALLOCATED DESCRIPTOR SETS
+                mResourceManager->RegisterMaterial(object->mMaterial);
+            }
+            else
+            {
+                object->mMaterial = queryResultMaterial.value();
+            }
         }
     }
 
-
--    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, mSwapchain->mSwapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
@@ -1501,7 +1571,8 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
     for (auto& object : aScene->GetSceneObjects())
     {
         vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineSceneObject);
-        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayoutSceneObjects, 0, 1, &descriptorSetsSceneObjects[imageIndex], 0, nullptr);
+        std::vector<VkDescriptorSet> objectSets = { descriptorSetsSceneObjects[imageIndex], object->mMaterial->mDescriptorSet };
+        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayoutSceneObjects, 0, objectSets.size(), objectSets.data(), 0, nullptr);
 
         VkBuffer vertexBuffers[] = { object->mMesh->mVertexBuffer->mBuffer };
         VkDeviceSize offsets[] = { 0 };

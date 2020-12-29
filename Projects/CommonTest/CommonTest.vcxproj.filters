@@ -2,15 +2,12 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="TextureAssetTests.cpp">
-      <Filter>Tests</Filter>
-    </ClCompile>
     <ClCompile Include="AssetManagerTests.cpp">
-      <Filter>Tests</Filter>
+      <Filter>AssetProcessing</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="pch.h" />
+    <ClCompile Include="TextureAssetTests.cpp">
+      <Filter>AssetProcessing</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -22,7 +19,7 @@
     <Filter Include="Resources">
       <UniqueIdentifier>{9fc10b6b-7486-4217-904b-2578ab09e5fc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Tests">
+    <Filter Include="AssetProcessing">
       <UniqueIdentifier>{39edf8e0-dfe5-44d4-94d5-93e81a38851f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -39,5 +36,8 @@
     <Image Include="Resources\tex0.jpg">
       <Filter>Resources</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
   </ItemGroup>
 </Project>

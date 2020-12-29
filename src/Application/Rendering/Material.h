@@ -8,11 +8,21 @@ namespace Flux
 class Material
 {
 public:
-	Material() : mTextureAsset(nullptr), mTextureVK(nullptr) {}
+	Material() : mTextureAsset(nullptr), mTextureVK(nullptr), mIndex(matIDIndex++) {}
 	std::shared_ptr<TextureAsset> mTextureAsset = nullptr;
 	std::shared_ptr<TextureVK> mTextureVK = nullptr;
 
 	VkDescriptorSet mDescriptorSet;
+	uint64_t mIndex;
+	static uint64_t matIDIndex;
+
+	//void operator = (const Flux::Material& M) {
+	//	this->matIDIndex = M.matIDIndex;
+	//	this->mTextureAsset = M.mTextureAsset;
+	//	this->mDescriptorSet = M.mDescriptorSet;
+	//	this->mTextureVK = M.mTextureVK;
+	//}
+
 };
 }
 

@@ -27,11 +27,11 @@
 #include "Renderer/Renderer.h"
 
 #include "Application/BasicGeometry.h"
-#include "common/AssetProcessing/AssetObjects.h"
+#include "Common/AssetProcessing/AssetObjects.h"
 #include "Application/Scene/iScene.h"
 
 #include "Renderer/TextureVK.h"
-
+#include "Application/Rendering/RenderingResourceManager.h"
 const int MAX_FRAMES_IN_FLIGHT = 1;
 
 const std::vector<const char*> validationLayers = {
@@ -107,6 +107,8 @@ namespace Flux
 			Cleanup();
 		}
 
+
+
 		bool mVsync;
 
 		VmaAllocator memoryAllocator;
@@ -115,7 +117,7 @@ namespace Flux
 		VmaAllocation textureImageMemoryCube;
 		VkImage textureImageTriangle;
 		VmaAllocation textureImageMemoryTriangle;
-		
+
 		VkSampler textureSampler;
 
 		//BasicGeometry *cube;
@@ -138,8 +140,6 @@ namespace Flux
 		VkRenderPass renderPass;
 		VkPipelineLayout pipelineLayout;
 		VkDescriptorSetLayout descriptorSetLayout;
-
-		VkDescriptorSetLayout descriptorSetLayoutSceneObjectsTextures;
 
 		VkPipeline graphicsPipelineSceneObject;
 		VkPipelineLayout pipelineLayoutSceneObjects;
@@ -167,6 +167,8 @@ namespace Flux
 		std::vector<std::shared_ptr<TextureVK>> mSceneTextures;
 		std::vector<std::shared_ptr<VkDescriptorSet>> mSceneSets;
 
+		std::unique_ptr<RenderingResourceManager> mResourceManager;
+
 		VkImageView textureImageViewCube;
 		VkImageView textureImageViewTriangle;
 
@@ -186,7 +188,6 @@ namespace Flux
 		void MainLoop();
 
 		void CleanupSwapChain();
-
 
 		void RecreateSwapChain();
 
@@ -246,7 +247,6 @@ namespace Flux
 		void CreateCommandBuffers();
 
 		void CreateSyncObjects();
-
 
 		void UpdateUniformBuffer(uint32_t currentImage);
 
@@ -361,7 +361,7 @@ namespace Flux
 
 		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
-		
+
 		public:
 		std::shared_ptr<SwapchainVK> mSwapchain;
 	};

@@ -29,7 +29,7 @@ void cursorpos_callback(GLFWwindow* window, double xpos, double ypos)
 		lastPosY = ypos;
 		firstFrame = false;
 	}
-	
+
 	mInput->MouseMoveInput(xpos, ypos);
 
 	lastPosX = xpos;
@@ -96,7 +96,7 @@ void Flux::Application::Run()
 		mInput->Update();
 	}
 	mScene->Cleanup();
-	
+
 	mRenderer->WaitIdle();
 	mRenderer->Cleanup();
 }
