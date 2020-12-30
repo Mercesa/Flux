@@ -6,9 +6,6 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     mat4 proj;
 } ubo;
 
-layout(set = 0, binding = 1) uniform UniformBufferObjectModel {
-    mat4 model;
-} uboModel;
 
 layout(push_constant) uniform PushConsts {
     mat4 model;

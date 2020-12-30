@@ -145,8 +145,6 @@ namespace Flux
 		VkPipelineLayout pipelineLayoutSceneObjects;
 		VkDescriptorSetLayout descriptorSetLayoutSceneObjects;
 		std::vector<VkDescriptorSet> descriptorSetsSceneObjects;
-		std::vector<VkBuffer> uniformBufferSceneObject;
-		std::vector<VmaAllocation> uniformBufferMemorySceneObject;
 
 		VkDescriptorPool descriptorPool;
 

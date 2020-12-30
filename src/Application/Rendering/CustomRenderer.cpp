@@ -97,14 +97,9 @@ void CustomRenderer::CustomRenderer:: CleanupSwapChain() {
     for (size_t i = 0; i < mSwapchain->mImages.size(); i++) {
         vkDestroyBuffer(device, uniformBuffer[i], nullptr);
         vmaFreeMemory(this->memoryAllocator, uniformBufferMemory[i]);
-
-        vkDestroyBuffer(device, uniformBufferSceneObject[i], nullptr);
-        vmaFreeMemory(this->memoryAllocator, uniformBufferMemorySceneObject[i]);
-
     }
 
     vkFreeDescriptorSets(device, descriptorPool, descriptorSetsSceneObjects.size(), descriptorSetsSceneObjects.data());
-
 }
 
 void CustomRenderer::Cleanup() {
@@ -721,14 +716,8 @@ void CustomRenderer::CreateDescriptorSetLayout()
         uboLayoutBindingCamera.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
         uboLayoutBindingCamera.pImmutableSamplers = nullptr;
 
-        VkDescriptorSetLayoutBinding uboLayoutBindingModel{};
-        uboLayoutBindingModel.binding = 1;
-        uboLayoutBindingModel.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboLayoutBindingModel.descriptorCount = 1;
-        uboLayoutBindingModel.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uboLayoutBindingModel.pImmutableSamplers = nullptr;
 
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBindingCamera, uboLayoutBindingModel };
+        std::array<VkDescriptorSetLayoutBinding, 1> bindings = { uboLayoutBindingCamera };
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -883,14 +872,9 @@ void CustomRenderer::CreateUniformBuffers()
     uniformBuffer.resize(mSwapchain->mImages.size());
     uniformBufferMemory.resize(mSwapchain->mImages.size());
 
-    uniformBufferSceneObject.resize(mSwapchain->mImages.size());
-    uniformBufferMemorySceneObject.resize(mSwapchain->mImages.size());
-
     for (size_t i = 0; i < mSwapchain->mImages.size(); i++)
     {
         mRenderer->CreateBuffer(device, memoryAllocator, sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, uniformBuffer[i], uniformBufferMemory[i]);
-
-        mRenderer->CreateBuffer(device, memoryAllocator, sizeof(glm::mat4), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, uniformBufferSceneObject[i], uniformBufferMemorySceneObject[i]);
     }
 }
 
@@ -947,12 +931,7 @@ void CustomRenderer::CreateDescriptorSets()
         bufferInfoCamera.offset = 0;
         bufferInfoCamera.range = sizeof(CustomRenderer::UniformBufferObject);
 
-        VkDescriptorBufferInfo bufferInfoModel{};
-        bufferInfoModel.buffer = uniformBufferSceneObject[i];
-        bufferInfoModel.offset = 0;
-        bufferInfoModel.range = sizeof(glm::mat4);
-
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
 
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[0].dstSet = descriptorSetsSceneObjects[i];
@@ -962,13 +941,6 @@ void CustomRenderer::CreateDescriptorSets()
         descriptorWrites[0].descriptorCount = 1;
         descriptorWrites[0].pBufferInfo = &bufferInfoCamera;
 
-        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[1].dstSet = descriptorSetsSceneObjects[i];
-        descriptorWrites[1].dstBinding = 1;
-        descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrites[1].descriptorCount = 1;
-        descriptorWrites[1].pBufferInfo = &bufferInfoModel;
 
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
@@ -1190,43 +1162,6 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
     }
 
-
-   /* {
-        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, cube->GetDescriptorSet(imageIndex), 0, nullptr);
-        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineCube);
-
-        VkBuffer vertexBuffers[] = { cube->GetVertexBuffer() };
-        VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffers[imageIndex], cube->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
-
-        vkCmdDrawIndexed(commandBuffers[imageIndex], static_cast<uint32_t>(cube->GetIndexCount()), 1, 0, 0, 0);
-    }
-
-    {
-        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, triangle->GetDescriptorSet(imageIndex), 0, nullptr);
-        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineTriangle);
-
-        VkBuffer vertexBuffers[] = { triangle->GetVertexBuffer() };
-        VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffers[imageIndex], triangle->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
-
-        vkCmdDrawIndexed(commandBuffers[imageIndex], static_cast<uint32_t>(triangle->GetIndexCount()), 1, 0, 0, 0);
-    }
-
-    {
-        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, sphere->GetDescriptorSet(imageIndex), 0, nullptr);
-        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelineSphere);
-
-        VkBuffer vertexBuffers[] = { sphere->GetVertexBuffer() };
-        VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffers[imageIndex], sphere->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT16);
-
-        vkCmdDrawIndexed(commandBuffers[imageIndex], static_cast<uint32_t>(sphere->GetIndexCount()), 1, 0, 0, 0);
-    }*/
-
     vkCmdEndRenderPass(commandBuffers[imageIndex]);
 
     if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
@@ -1299,13 +1234,6 @@ void CustomRenderer::UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<
     vmaMapMemory(memoryAllocator, uniformBufferMemory[currentImage], &data);
     memcpy(data, &ubo, sizeof(ubo));
     vmaUnmapMemory(memoryAllocator, uniformBufferMemory[currentImage]);
-
-
-    glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(0.05f));
-    void* dataObjectCB;
-    vmaMapMemory(memoryAllocator, uniformBufferMemorySceneObject[currentImage], &dataObjectCB);
-    memcpy(dataObjectCB, &scaleMatrix, sizeof(scaleMatrix));
-    vmaUnmapMemory(memoryAllocator, uniformBufferMemorySceneObject[currentImage]);
 }
 
 VkSurfaceFormatKHR CustomRenderer::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
