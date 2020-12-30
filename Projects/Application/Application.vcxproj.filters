@@ -46,13 +46,16 @@
     <ClInclude Include="..\..\src\Application\Scene\FirstScene.h">
       <Filter>src\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Application\Scene\iSceneObject.h">
-      <Filter>src\Scene</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\Application\Rendering\Material.h">
       <Filter>src\Rendering</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Application\Rendering\RenderingResourceManager.h">
+      <Filter>src\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Application\Scene\iSceneObject.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Application\Rendering\RenderState.h">
       <Filter>src\Rendering</Filter>
     </ClInclude>
   </ItemGroup>
@@ -88,6 +91,9 @@
       <Filter>src\Rendering</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Application\Rendering\RenderingResourceManager.cpp">
+      <Filter>src\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Application\Rendering\RenderState.cpp">
       <Filter>src\Rendering</Filter>
     </ClCompile>
   </ItemGroup>

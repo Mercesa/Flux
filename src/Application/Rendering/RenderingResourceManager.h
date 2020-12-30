@@ -12,7 +12,7 @@
 
 namespace Flux
 {
-	class TextureAsset;
+	struct TextureAsset;
 
 class RenderingResourceManager
 {

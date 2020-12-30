@@ -10,6 +10,10 @@ layout(set = 0, binding = 1) uniform UniformBufferObjectModel {
     mat4 model;
 } uboModel;
 
+layout(push_constant) uniform PushConsts {
+    mat4 model;
+} pushConsts;
+
 layout(location = 0) out vec2 outTexCoord;
 layout(location = 1) out vec3 outNormal;
 
@@ -21,7 +25,7 @@ layout(location = 4) in vec3 bitangent;
 
 
 void main() {
-    gl_Position = ubo.proj * ubo.view * uboModel.model * vec4(inPosition, 1.0);
+    gl_Position = ubo.proj * ubo.view * pushConsts.model * vec4(inPosition, 1.0);
     outTexCoord = texCoord;
     outNormal = normal;
 }

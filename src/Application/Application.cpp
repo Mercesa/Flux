@@ -52,16 +52,14 @@ Flux::Application::~Application()
 }
 
 void character_callback(GLFWwindow* window, unsigned int codepoint)
-{
-	//std::cout << codepoint << std::endl;
-}
+{}
 
 void Flux::Application::Run()
 {
 	mInput = std::make_shared<Input>();
 
 	std::shared_ptr<FirstScene> mScene = std::make_shared<FirstScene>(mInput);
-	mRenderer = std::make_unique<CustomRenderer>(mScene->GetCamera());
+	mRenderer = std::make_unique<CustomRenderer>();
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -72,7 +70,6 @@ void Flux::Application::Run()
 	glfwSetCharCallback(mWindow, character_callback);
 	glfwSetKeyCallback(mWindow, key_callback);
 	glfwSetCursorPosCallback(mWindow, cursorpos_callback);
-	mRenderer->mCamera = mScene->GetCamera();
 	mRenderer->SetWindow(mWindow);
 	mRenderer->Init();
 

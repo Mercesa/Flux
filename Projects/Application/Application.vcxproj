@@ -120,6 +120,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\SPIRV-Reflect-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir);$(SolutionDir)\External\assimp-master\include;$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -138,6 +139,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\SPIRV-Reflect-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir);$(SolutionDir)\External\assimp-master\include;$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -158,6 +160,7 @@
     <ClInclude Include="..\..\src\Application\Rendering\Mesh.h" />
     <ClInclude Include="..\..\src\Application\Rendering\Model.h" />
     <ClInclude Include="..\..\src\Application\Rendering\RenderingResourceManager.h" />
+    <ClInclude Include="..\..\src\Application\Rendering\RenderState.h" />
     <ClInclude Include="..\..\src\Application\Scene\FirstScene.h" />
     <ClInclude Include="..\..\src\Application\Scene\iScene.h" />
     <ClInclude Include="..\..\src\Application\Scene\iSceneObject.h" />
@@ -172,6 +175,7 @@
     <ClCompile Include="..\..\src\Application\Rendering\Mesh.cpp" />
     <ClCompile Include="..\..\src\Application\Rendering\Model.cpp" />
     <ClCompile Include="..\..\src\Application\Rendering\RenderingResourceManager.cpp" />
+    <ClCompile Include="..\..\src\Application\Rendering\RenderState.cpp" />
     <ClCompile Include="..\..\src\Application\Scene\FirstScene.cpp" />
     <ClCompile Include="..\..\src\Application\Scene\iScene.cpp" />
   </ItemGroup>

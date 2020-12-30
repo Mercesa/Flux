@@ -9,6 +9,6 @@ namespace Flux
 class Model
 {
 public:
-	std::vector<std::shared_ptr<Mesh>> mMeshes;
+	std::vector<std::shared_ptr<MeshVK>> mMeshes;
 };
 }

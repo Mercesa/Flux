@@ -25,12 +25,15 @@
 
 #include "Renderer/Reflection.h"
 #include "Renderer/Renderer.h"
+#include "Renderer/TextureVK.h"
+#include "Renderer/BufferVK.h"
 
 #include "Application/BasicGeometry.h"
-#include "Common/AssetProcessing/AssetObjects.h"
 #include "Application/Scene/iScene.h"
+#include "Application/Rendering/RenderState.h"
 
-#include "Renderer/TextureVK.h"
+#include "Common/AssetProcessing/AssetObjects.h"
+
 #include "Application/Rendering/RenderingResourceManager.h"
 const int MAX_FRAMES_IN_FLIGHT = 1;
 
@@ -41,6 +44,8 @@ const std::vector<const char*> validationLayers = {
 const std::vector<const char*> deviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
+
+constexpr uint32_t AMOUNT_PREALLOCATED_OBJECTS = 0;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -55,7 +60,7 @@ namespace Flux
 	class CustomRenderer
 	{
 	public:
-		CustomRenderer(std::shared_ptr<Camera> aCamera);
+		CustomRenderer();
 		void Init();
 		void WaitIdle();
 		void Draw(const std::shared_ptr<iScene> aScene);
@@ -107,8 +112,6 @@ namespace Flux
 			Cleanup();
 		}
 
-
-
 		bool mVsync;
 
 		VmaAllocator memoryAllocator;
@@ -119,10 +122,6 @@ namespace Flux
 		VmaAllocation textureImageMemoryTriangle;
 
 		VkSampler textureSampler;
-
-		//BasicGeometry *cube;
-		//BasicGeometry *triangle;
-		//BasicGeometry *sphere;
 
 		std::vector<VkBuffer> uniformBuffer;
 		std::vector<VmaAllocation> uniformBufferMemory;
@@ -138,19 +137,16 @@ namespace Flux
 		VkQueue presentQueue;
 
 		VkRenderPass renderPass;
-		VkPipelineLayout pipelineLayout;
 		VkDescriptorSetLayout descriptorSetLayout;
 
-		VkPipeline graphicsPipelineSceneObject;
+		VkDescriptorSetLayout descriptorSetLayoutPerObject;
+
+
 		VkPipelineLayout pipelineLayoutSceneObjects;
 		VkDescriptorSetLayout descriptorSetLayoutSceneObjects;
 		std::vector<VkDescriptorSet> descriptorSetsSceneObjects;
 		std::vector<VkBuffer> uniformBufferSceneObject;
 		std::vector<VmaAllocation> uniformBufferMemorySceneObject;
-
-		VkPipeline graphicsPipelineCube;
-		VkPipeline graphicsPipelineTriangle;
-		VkPipeline graphicsPipelineSphere;
 
 		VkDescriptorPool descriptorPool;
 
@@ -166,18 +162,14 @@ namespace Flux
 		std::vector<std::shared_ptr<BufferVK>> mSceneBuffers;
 		std::vector<std::shared_ptr<TextureVK>> mSceneTextures;
 		std::vector<std::shared_ptr<VkDescriptorSet>> mSceneSets;
+		std::vector<std::pair<RenderState, VkPipeline>> mPipelines;
 
 		std::unique_ptr<RenderingResourceManager> mResourceManager;
-
-		VkImageView textureImageViewCube;
-		VkImageView textureImageViewTriangle;
 
 
 		std::vector<std::shared_ptr<BufferVK>> mBuffers;
 
 		bool framebufferResized = false;
-
-		std::shared_ptr<Camera> mCamera;
 
 		std::shared_ptr<Renderer> mRenderer;
 
@@ -211,11 +203,9 @@ namespace Flux
 
 		void CreateRenderPass();
 
-		void CreateGraphicsPipelines();
-		void CreateGraphicsPipelineSceneObject();
-		void CreateGraphicsPipelineCube();
-		void CreateGraphicsPipelineTriangle();
-		void CreateGraphicsPipelineSphere();
+		VkPipeline CreateGraphicsPipelineForState(RenderState state);
+		std::optional<uint32_t> QueryPipeline(RenderState state);
+		uint32_t CreatePipeline(RenderState state);
 
 		void CreateDescriptorSetLayout();
 
@@ -225,18 +215,9 @@ namespace Flux
 
 		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage properties, VkImage& image, VmaAllocation& imageMemory);
 
-
 		void CreateDepthResources();
 
-		void CreateTextureImages();
-		void CreateTextureImageCube();
-		void CreateTextureImageTriangle();
-
-		void CreateTextureImageViews();
-
 		void CreateTextureSampler();
-
-		void CreateGeometry();
 
 		void CreateUniformBuffers();
 
@@ -248,7 +229,7 @@ namespace Flux
 
 		void CreateSyncObjects();
 
-		void UpdateUniformBuffer(uint32_t currentImage);
+		void UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<Camera> aCam);
 
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 

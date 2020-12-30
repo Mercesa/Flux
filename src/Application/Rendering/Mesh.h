@@ -5,11 +5,11 @@
 
 namespace Flux
 {
-class Mesh
+class MeshVK
 {
 public:
-	Mesh() = default;
-	~Mesh() = default;
+	MeshVK() = default;
+	~MeshVK() = default;
 
 	std::shared_ptr<BufferVK> mVertexBuffer = nullptr;
 	std::shared_ptr<BufferVK> mIndexBuffer = nullptr;
