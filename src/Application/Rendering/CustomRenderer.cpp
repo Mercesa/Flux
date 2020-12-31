@@ -13,8 +13,6 @@ using namespace Flux;
 
 #include "Renderer/BufferVK.h"
 
-
-
 Flux::CustomRenderer::CustomRenderer() : mVsync(true)
 {
     mRenderer = std::make_shared<Renderer>();
@@ -1227,8 +1225,7 @@ void CustomRenderer::UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<
 
     UniformBufferObject ubo{};
     ubo.view = aCam->GetViewMatrix();
-    ubo.projection = glm::perspective(glm::radians(45.0f), mSwapchain->mExtent.width / (float)mSwapchain->mExtent.height, 0.1f, 1000.0f);
-    ubo.projection[1][1] *= -1;
+    ubo.projection = aCam->GetProjectionMatrix();
 
     void *data;
     vmaMapMemory(memoryAllocator, uniformBufferMemory[currentImage], &data);

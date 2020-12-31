@@ -45,8 +45,19 @@ namespace Flux
 		float MouseSensitivity;
 		float Zoom;
 
+		float nearPlane;
+		float farPlane;
+		float mFov;
+		int32_t viewportHeight;
+		int32_t viewportWidth;
+
+
 		// constructor with vectors
-		Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+		Camera(
+			glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
+			glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f),
+			float yaw = YAW, float pitch = PITCH,
+			float aNear = 0.1f, float aFar = 1000.0f, float aFov = glm::radians(45.0f), int32_t aViewPortWidth = 512, int32_t aViewPortHeight = 512) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM), nearPlane(aNear), farPlane(aFar), mFov(aFov), viewportWidth(aViewPortWidth), viewportHeight(aViewPortHeight)
 		{
 			Position = position;
 			WorldUp = up;
@@ -64,12 +75,23 @@ namespace Flux
 			updateCameraVectors();
 		}
 
+		float GetAspectRatio()
+		{
+			return (static_cast<float>(viewportWidth) / static_cast<float>(viewportHeight));
+		}
 		// returns the view matrix calculated using Euler Angles and the LookAt Matrix
 		glm::mat4 GetViewMatrix()
 		{
 			return glm::lookAt(Position, Position + Front, Up);
 		}
 
+		glm::mat4 GetProjectionMatrix()
+		{
+			glm::mat4 projection = glm::perspective(glm::radians(mFov), GetAspectRatio(), nearPlane, farPlane);
+			projection[1][1] *= -1;
+
+			return projection;
+		}
 		// processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
 		void ProcessKeyboard(Camera_Movement direction, float deltaTime)
 		{
@@ -111,10 +133,10 @@ namespace Flux
 		void ProcessMouseScroll(float yoffset)
 		{
 			Zoom -= (float)yoffset;
-			if (Zoom < 1.0f)
-				Zoom = 1.0f;
-			if (Zoom > 45.0f)
-				Zoom = 45.0f;
+			if (mFov < 1.0f)
+				mFov = 1.0f;
+			if (mFov > 45.0f)
+				mFov = 45.0f;
 		}
 
 	private:
