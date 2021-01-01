@@ -184,6 +184,7 @@
     <None Include="Resources\Shaders\basic.vert" />
     <None Include="Resources\Shaders\basicModel.frag" />
     <None Include="Resources\Shaders\basicModel.vert" />
+    <None Include="Resources\Shaders\common.glsl" />
     <None Include="Resources\Shaders\cube.frag" />
     <None Include="Resources\Shaders\cube.vert" />
     <None Include="Resources\Shaders\sphere.frag" />

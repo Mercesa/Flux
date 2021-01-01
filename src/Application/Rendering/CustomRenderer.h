@@ -83,10 +83,15 @@ namespace Flux
 			std::vector<VkPresentModeKHR> presentModes;
 		};
 
-		struct UniformBufferObject
+		struct UniformBufferCamera
 		{
 			glm::mat4 view;
 			glm::mat4 projection;
+			glm::vec4 position;
+			float nearPlane;
+			float farPlane;
+			float angle;
+			float padding;
 		};
 
 		VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
@@ -106,6 +111,12 @@ namespace Flux
 			}
 		}
 
+		struct UniformBufferDataCamera
+		{
+
+
+		};
+
 		void Run() {
 			InitVulkan();
 			MainLoop();
@@ -116,15 +127,12 @@ namespace Flux
 
 		VmaAllocator memoryAllocator;
 
-		VkImage textureImageCube;
-		VmaAllocation textureImageMemoryCube;
-		VkImage textureImageTriangle;
-		VmaAllocation textureImageMemoryTriangle;
+		std::shared_ptr<TextureVK> mEmptyTexture;
 
 		VkSampler textureSampler;
 
-		std::vector<VkBuffer> uniformBuffer;
-		std::vector<VmaAllocation> uniformBufferMemory;
+		std::vector<VkBuffer> uniformBufferCameraBuffer;
+		std::vector<VmaAllocation> uniformBufferCameraMemory;
 
 		VkInstance instance;
 		VkDebugUtilsMessengerEXT debugMessenger;
@@ -140,7 +148,6 @@ namespace Flux
 		VkDescriptorSetLayout descriptorSetLayout;
 
 		VkDescriptorSetLayout descriptorSetLayoutPerObject;
-
 
 		VkPipelineLayout pipelineLayoutSceneObjects;
 		VkDescriptorSetLayout descriptorSetLayoutSceneObjects;

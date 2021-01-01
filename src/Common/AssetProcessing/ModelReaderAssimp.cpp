@@ -104,13 +104,6 @@ std::string GetTextureLocation(aiMaterial* const a_Mat, aiTextureType a_Type)
 
 	std::string stString = std::string(str.C_Str());
 
-
-	// Add DDS to the file extension
-	//std::size_t dotPos = stString.find_last_of(".");
-	//stString.erase(dotPos, stString.size());
-	//
-	//stString.append(".DDS");
-
 	return stString;
 }
 

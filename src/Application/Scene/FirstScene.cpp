@@ -12,7 +12,7 @@
 Flux::FirstScene::FirstScene(std::shared_ptr<Input> aInput) :
 	iScene(
 		std::make_shared<Camera>(glm::vec3(0.0f, 5.0f, 5.0f),
-			glm::vec3(0.0f, 1.0f, 0.0f), YAW, -45.0f, 0.1f, 1000.0f, 45.0f, 800, 600  ), aInput)
+			glm::vec3(0.0f, 1.0f, 0.0f), YAW, -45.0f, 0.1f, 1000.0f, 90.0f, 1366, 768  ), aInput)
 {
 }
 
@@ -37,6 +37,7 @@ void Flux::FirstScene::Init()
 
 		if (tSceneObject->mAsset->mMaterialAsset.mTextures.size() != 0)
 		{
+			for (auto& texture : tSceneObject->mAsset->mMaterialAsset.mTextures);
 			std::filesystem::path tPath = std::filesystem::path("Resources/Models/Sponza/" + tSceneObject->mAsset->mMaterialAsset.mTextures[0].second);
 			tSceneObject->mMaterial->mTextureAsset = mAssetManager->LoadTexture(tPath);
 		}

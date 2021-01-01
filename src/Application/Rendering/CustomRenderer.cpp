@@ -59,6 +59,15 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
     CreateDescriptorSets();
     CreateCommandBuffers();
     CreateSyncObjects();
+
+
+    uint32_t emptyData[1];
+    emptyData[0] = 0xFF000000;
+    mEmptyTexture =  mRenderer->CreateAndUploadTexture(
+        device, graphicsQueue, commandPool, memoryAllocator,
+        1, 1,
+        sizeof(uint32_t),
+        reinterpret_cast<unsigned char*>(emptyData), VK_FORMAT_R8G8B8A8_UNORM);
 }
 
 void CustomRenderer::CustomRenderer::MainLoop() {
@@ -93,8 +102,8 @@ void CustomRenderer::CustomRenderer:: CleanupSwapChain() {
     vkDestroySwapchainKHR(device, mSwapchain->mSwapChain, nullptr);
 
     for (size_t i = 0; i < mSwapchain->mImages.size(); i++) {
-        vkDestroyBuffer(device, uniformBuffer[i], nullptr);
-        vmaFreeMemory(this->memoryAllocator, uniformBufferMemory[i]);
+        vkDestroyBuffer(device, uniformBufferCameraBuffer[i], nullptr);
+        vmaFreeMemory(this->memoryAllocator, uniformBufferCameraMemory[i]);
     }
 
     vkFreeDescriptorSets(device, descriptorPool, descriptorSetsSceneObjects.size(), descriptorSetsSceneObjects.data());
@@ -105,10 +114,10 @@ void CustomRenderer::Cleanup() {
 
     vkDestroySampler(device, textureSampler, nullptr);
 
-    vkDestroyImage(device, textureImageCube, nullptr);
-    vmaFreeMemory(memoryAllocator, textureImageMemoryCube);
-    vkDestroyImage(device, textureImageTriangle, nullptr);
-    vmaFreeMemory(memoryAllocator, textureImageMemoryTriangle);
+    vkDestroyImageView(device, mEmptyTexture->mView, nullptr);
+    vkDestroyImage(device, mEmptyTexture->mImage, nullptr);
+    vmaFreeMemory(memoryAllocator, mEmptyTexture->mAllocation);
+
 
     vkDestroyDescriptorPool(device, this->descriptorPool, nullptr);
 
@@ -691,7 +700,6 @@ std::optional<uint32_t> Flux::CustomRenderer::QueryPipeline(RenderState state)
 
 uint32_t Flux::CustomRenderer::CreatePipeline(RenderState state)
 {
-
     auto tQuery = QueryPipeline(state);
 
     if (tQuery.has_value())
@@ -711,7 +719,7 @@ void CustomRenderer::CreateDescriptorSetLayout()
         uboLayoutBindingCamera.binding = 0;
         uboLayoutBindingCamera.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         uboLayoutBindingCamera.descriptorCount = 1;
-        uboLayoutBindingCamera.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uboLayoutBindingCamera.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         uboLayoutBindingCamera.pImmutableSamplers = nullptr;
 
 
@@ -728,21 +736,35 @@ void CustomRenderer::CreateDescriptorSetLayout()
     }
 
     {
-        VkDescriptorSetLayoutBinding textureLayoutBinding{};
-        textureLayoutBinding.binding = 0;
-        textureLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        textureLayoutBinding.descriptorCount = 1;
-        textureLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        textureLayoutBinding.pImmutableSamplers = nullptr;
+        VkDescriptorSetLayoutBinding textureLayoutBinding0{};
+        textureLayoutBinding0.binding = 0;
+        textureLayoutBinding0.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        textureLayoutBinding0.descriptorCount = 1;
+        textureLayoutBinding0.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        textureLayoutBinding0.pImmutableSamplers = nullptr;
+
+        VkDescriptorSetLayoutBinding textureLayoutBinding1{};
+        textureLayoutBinding1.binding = 1;
+        textureLayoutBinding1.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        textureLayoutBinding1.descriptorCount = 1;
+        textureLayoutBinding1.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        textureLayoutBinding1.pImmutableSamplers = nullptr;
+
+        VkDescriptorSetLayoutBinding textureLayoutBinding2{};
+        textureLayoutBinding2.binding = 2;
+        textureLayoutBinding2.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        textureLayoutBinding2.descriptorCount = 1;
+        textureLayoutBinding2.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        textureLayoutBinding2.pImmutableSamplers = nullptr;
 
         VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-        samplerLayoutBinding.binding = 1;
+        samplerLayoutBinding.binding = 3;
         samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
         samplerLayoutBinding.descriptorCount = 1;
         samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         samplerLayoutBinding.pImmutableSamplers = nullptr;
 
-        std::array<VkDescriptorSetLayoutBinding, 2> bindingsSceneObject = { textureLayoutBinding, samplerLayoutBinding };
+        std::array<VkDescriptorSetLayoutBinding, 4> bindingsSceneObject = { textureLayoutBinding0, textureLayoutBinding1, textureLayoutBinding2, samplerLayoutBinding };
         VkDescriptorSetLayoutCreateInfo layoutInfoSceneObject{};
         layoutInfoSceneObject.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfoSceneObject.bindingCount = static_cast<uint32_t>(bindingsSceneObject.size());
@@ -867,12 +889,12 @@ void CustomRenderer::CreateTextureSampler()
 
 void CustomRenderer::CreateUniformBuffers()
 {
-    uniformBuffer.resize(mSwapchain->mImages.size());
-    uniformBufferMemory.resize(mSwapchain->mImages.size());
+    uniformBufferCameraBuffer.resize(mSwapchain->mImages.size());
+    uniformBufferCameraMemory.resize(mSwapchain->mImages.size());
 
     for (size_t i = 0; i < mSwapchain->mImages.size(); i++)
     {
-        mRenderer->CreateBuffer(device, memoryAllocator, sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, uniformBuffer[i], uniformBufferMemory[i]);
+        mRenderer->CreateBuffer(device, memoryAllocator, sizeof(UniformBufferCamera), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, uniformBufferCameraBuffer[i], uniformBufferCameraMemory[i]);
     }
 }
 
@@ -925,9 +947,9 @@ void CustomRenderer::CreateDescriptorSets()
     for (size_t i = 0; i < mSwapchain->mImages.size(); i++)
     {
         VkDescriptorBufferInfo bufferInfoCamera{};
-        bufferInfoCamera.buffer = uniformBuffer[i];
+        bufferInfoCamera.buffer = uniformBufferCameraBuffer[i];
         bufferInfoCamera.offset = 0;
-        bufferInfoCamera.range = sizeof(CustomRenderer::UniformBufferObject);
+        bufferInfoCamera.range = sizeof(CustomRenderer::UniformBufferCamera);
 
         std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
 
@@ -1043,14 +1065,20 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
                     throw std::runtime_error("Failed to allocate descriptor sets!");
                 }
 
+
 				VkDescriptorImageInfo albedoImage{};
                 albedoImage.imageView = object->mMaterial->mTextureVK->mView;
                 albedoImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+                VkDescriptorImageInfo emptyImage{};
+                emptyImage.imageView = mEmptyTexture->mView;
+                emptyImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+
                 VkDescriptorImageInfo samplerInfo{};
                 samplerInfo.sampler = textureSampler;
 
-				std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+				std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
 
 				descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				descriptorWrites[0].dstSet = mSet[0];
@@ -1060,13 +1088,29 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 				descriptorWrites[0].descriptorCount = 1;
 				descriptorWrites[0].pImageInfo = &albedoImage;
 
-				descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				descriptorWrites[1].dstSet = mSet[0];
-				descriptorWrites[1].dstBinding = 1;
-				descriptorWrites[1].dstArrayElement = 0;
-				descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-				descriptorWrites[1].descriptorCount = 1;
-                descriptorWrites[1].pImageInfo = &samplerInfo;
+                descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrites[1].dstSet = mSet[0];
+                descriptorWrites[1].dstBinding = 1;
+                descriptorWrites[1].dstArrayElement = 0;
+                descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+                descriptorWrites[1].descriptorCount = 1;
+                descriptorWrites[1].pImageInfo = &albedoImage;
+
+                descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrites[2].dstSet = mSet[0];
+                descriptorWrites[2].dstBinding = 2;
+                descriptorWrites[2].dstArrayElement = 0;
+                descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+                descriptorWrites[2].descriptorCount = 1;
+                descriptorWrites[2].pImageInfo = &albedoImage;
+
+				descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrites[3].dstSet = mSet[0];
+				descriptorWrites[3].dstBinding = 3;
+				descriptorWrites[3].dstArrayElement = 0;
+				descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+				descriptorWrites[3].descriptorCount = 1;
+                descriptorWrites[3].pImageInfo = &samplerInfo;
 
 				vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
                 object->mMaterial->mDescriptorSet = mSet[0];
@@ -1223,14 +1267,18 @@ void CustomRenderer::UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    UniformBufferObject ubo{};
+    UniformBufferCamera ubo{};
     ubo.view = aCam->GetViewMatrix();
     ubo.projection = aCam->GetProjectionMatrix();
+    ubo.position = glm::vec4(aCam->Position, 1.0);
+    ubo.angle = aCam->mFov;
+    ubo.nearPlane = aCam->nearPlane;
+    ubo.farPlane = aCam->farPlane;
 
     void *data;
-    vmaMapMemory(memoryAllocator, uniformBufferMemory[currentImage], &data);
+    vmaMapMemory(memoryAllocator, uniformBufferCameraMemory[currentImage], &data);
     memcpy(data, &ubo, sizeof(ubo));
-    vmaUnmapMemory(memoryAllocator, uniformBufferMemory[currentImage]);
+    vmaUnmapMemory(memoryAllocator, uniformBufferCameraMemory[currentImage]);
 }
 
 VkSurfaceFormatKHR CustomRenderer::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {

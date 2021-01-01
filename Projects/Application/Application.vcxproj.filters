@@ -128,5 +128,8 @@
     <None Include="Resources\Shaders\basicModel.vert">
       <Filter>Resources\Shaders</Filter>
     </None>
+    <None Include="Resources\Shaders\common.glsl">
+      <Filter>Resources\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

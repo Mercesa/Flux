@@ -1,5 +1,8 @@
 #pragma once
 #include <memory>
+#include <vector>
+#include <string>
+
 #include <Common/AssetProcessing/AssetObjects.h>
 #include <Renderer/TextureVK.h>
 
@@ -11,6 +14,7 @@ public:
 	Material() : mTextureAsset(nullptr), mTextureVK(nullptr), mIndex(matIDIndex++) {}
 	std::shared_ptr<TextureAsset> mTextureAsset = nullptr;
 	std::shared_ptr<TextureVK> mTextureVK = nullptr;
+
 
 	VkDescriptorSet mDescriptorSet;
 	uint64_t mIndex;
