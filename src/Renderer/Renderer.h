@@ -5,8 +5,12 @@
 #include <vector>
 #include <memory>
 
+
+
 #include "vulkan/vulkan.h"
 #include <VmaUsage.h>
+
+#include "Context.h"
 
 namespace Flux
 {
@@ -15,6 +19,8 @@ namespace Flux
 	class Renderer
 	{
     public:
+        Renderer(GLFWwindow* aWindow);
+
 		VkShaderModule CreateShaderModule(VkDevice aDevice, const std::vector<char>& code);
 
 		VkCommandBuffer BeginSingleTimeCommands(VkDevice aDevice, VkCommandPool aCmdPool);
@@ -79,5 +85,9 @@ namespace Flux
             VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator,
             uint32_t aWidth, uint32_t aHeight, uint32_t aImgSize, unsigned char* aImageData,
             VkFormat aFormat);
+
+        std::shared_ptr<Flux::Gfx::Context> mContext;
+    private:
+
 	};
 };

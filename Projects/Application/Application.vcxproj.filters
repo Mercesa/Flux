@@ -58,6 +58,7 @@
     <ClInclude Include="..\..\src\Application\Rendering\RenderState.h">
       <Filter>src\Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="Context.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Application\Input.cpp">

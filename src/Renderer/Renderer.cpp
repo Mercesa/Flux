@@ -6,6 +6,11 @@
 using namespace Flux;
 
 
+Flux::Renderer::Renderer(GLFWwindow* aWindow)
+{
+	mContext = std::shared_ptr<Flux::Gfx::Context>(new Flux::Gfx::Context(aWindow));
+}
+
 VkShaderModule Renderer::CreateShaderModule(VkDevice aDevice, const std::vector<char>& code) {
 
 	assert(code.size() > 0);
@@ -196,7 +201,7 @@ std::shared_ptr<TextureVK> Renderer::CreateAndUploadTexture(
 	VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator,
 	uint32_t aWidth, uint32_t aHeight, uint32_t aImgSize, unsigned char* aImageData,
 	VkFormat aFormat ) {
-	
+
 	std::shared_ptr<TextureVK> tReturnTexture = std::make_shared<TextureVK>();
 
 	VkBuffer stagingBuffer;

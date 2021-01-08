@@ -22,6 +22,9 @@
     <ClCompile Include="..\..\src\Renderer\SwapchainVK.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Renderer\Context.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\External\SPIRV-Reflect-master\spirv_reflect.h">
@@ -44,6 +47,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Renderer\TextureVK.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Renderer\Context.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

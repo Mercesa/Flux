@@ -14,7 +14,7 @@ class Application
 public:
 	Application();
 	~Application();
-	
+
 	void Run();
 private:
 	GLFWwindow* mWindow;
@@ -28,7 +28,7 @@ private:
 	bool mResized;
 
 	std::unique_ptr<CustomRenderer> mRenderer;
-	
+
 protected:
 };
 }
