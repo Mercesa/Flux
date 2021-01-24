@@ -4,13 +4,17 @@
 
 namespace Flux
 {
-	class TextureVK
+	namespace Gfx
 	{
-	public:
-		VkImage mImage;
-		VkImageView mView;
-		VkFormat mFormat;
-		VmaAllocation mAllocation;
-	};
+		class Texture
+		{
+		public:
+			VkImage mImage;
+			VkImageView mView;
+			VkFormat mFormat;
+			VmaAllocation mAllocation;
+		};
+	}
+
 }
 

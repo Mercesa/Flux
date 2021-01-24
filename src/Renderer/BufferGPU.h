@@ -4,7 +4,11 @@
 
 namespace Flux
 {
-	class BufferVK
+	namespace Gfx
+	{
+
+
+	class BufferGPU
 	{
 	public:
 		VkBuffer mBuffer;
@@ -12,4 +16,5 @@ namespace Flux
 		VmaAllocation mAllocation;
 		VmaMemoryUsage mMemoryUsage;
 	};
+	}
 }

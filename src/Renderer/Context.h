@@ -7,7 +7,9 @@
 #include "vulkan/vulkan.h"
 #include <VmaUsage.h>
 
-#include <Renderer/SwapchainVK.h>
+#include <Renderer/Swapchain.h>
+#include "Renderer/GraphicsDevice.h"
+#include "Renderer/Queue.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -176,24 +178,6 @@ namespace Flux
 			void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
 			void SetupDebugMessenger();
-
-			std::shared_ptr<SwapchainVK> mSwapchain;
-			VkDebugUtilsMessengerEXT debugMessenger;
-			VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-			VkDevice device;
-			VkInstance instance;
-			VkSurfaceKHR surface;
-
-			VmaAllocator memoryAllocator;
-
-			bool enableValidationLayers = true;
-			bool mVsync = true;
-
-			GLFWwindow* mWindow;
-
-			VkQueue graphicsQueue;
-			VkQueue presentQueue;
-
 
 		};
 	}

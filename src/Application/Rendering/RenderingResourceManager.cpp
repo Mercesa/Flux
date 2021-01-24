@@ -1,13 +1,14 @@
 #include "RenderingResourceManager.h"
 
 
+using namespace Flux::Gfx;
 
 Flux::RenderingResourceManager::RenderingResourceManager()
 {
 }
 
 // Check for empty pointers, check if resource is already registered, if already registered. return true
-std::optional<std::shared_ptr<Flux::TextureVK>> Flux::RenderingResourceManager::QueryTextureAssetRegistered(std::shared_ptr<Flux::TextureAsset> aTextureAsset) const
+std::optional<std::shared_ptr<Flux::Gfx::Texture>> Flux::RenderingResourceManager::QueryTextureAssetRegistered(std::shared_ptr<Flux::TextureAsset> aTextureAsset) const
 {
 	assert(aTextureAsset);
 
@@ -15,15 +16,15 @@ std::optional<std::shared_ptr<Flux::TextureVK>> Flux::RenderingResourceManager::
 	{
 		if (aTextureAsset->mPath == texture.first->mPath)
 		{
-			return std::optional<std::shared_ptr<Flux::TextureVK>>(texture.second);
+			return std::optional<std::shared_ptr<Flux::Gfx::Texture>>(texture.second);
 		}
 	}
 
 	// Asset is not associated with a VK texture yet
-	return std::optional<std::shared_ptr<Flux::TextureVK>>();
+	return std::optional<std::shared_ptr<Flux::Gfx::Texture>>();
 }
 
-bool Flux::RenderingResourceManager::RegisterTextureData(std::pair < std::shared_ptr<Flux::TextureAsset>, std::shared_ptr<Flux::TextureVK>> aTexturePair)
+bool Flux::RenderingResourceManager::RegisterTextureData(std::pair < std::shared_ptr<Flux::TextureAsset>, std::shared_ptr<Flux::Gfx::Texture>> aTexturePair)
 {
 	assert(aTexturePair.first);
 	assert(aTexturePair.second);

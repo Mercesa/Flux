@@ -163,19 +163,20 @@
   <ItemGroup>
     <ClCompile Include="..\..\External\SPIRV-Reflect-master\spirv_reflect.c" />
     <ClCompile Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.cpp" />
-    <ClCompile Include="..\..\src\Renderer\Context.cpp" />
     <ClCompile Include="..\..\src\Renderer\Renderer.cpp" />
-    <ClCompile Include="..\..\src\Renderer\SwapchainVK.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\..\VulkanSDK\1.2.141.2\Include\spirv_cross\spirv_reflect.hpp" />
     <ClInclude Include="..\..\External\SPIRV-Reflect-master\spirv_reflect.h" />
     <ClInclude Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.h" />
-    <ClInclude Include="..\..\src\Renderer\BufferVK.h" />
-    <ClInclude Include="..\..\src\Renderer\Context.h" />
+    <ClInclude Include="..\..\src\Renderer\BufferGPU.h" />
+    <ClInclude Include="..\..\src\Renderer\DescriptorPool.h" />
+    <ClInclude Include="..\..\src\Renderer\GraphicsDevice.h" />
+    <ClInclude Include="..\..\src\Renderer\Queue.h" />
     <ClInclude Include="..\..\src\Renderer\Reflection.h" />
+    <ClInclude Include="..\..\src\Renderer\RenderContext.h" />
     <ClInclude Include="..\..\src\Renderer\Renderer.h" />
-    <ClInclude Include="..\..\src\Renderer\SwapchainVK.h" />
+    <ClInclude Include="..\..\src\Renderer\Swapchain.h" />
     <ClInclude Include="..\..\src\Renderer\TextureVK.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

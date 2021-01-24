@@ -3,6 +3,7 @@
 Flux::Gfx::Context::Context(GLFWwindow* aWindow)
 {
     mWindow = aWindow;
+    mDevice = std::make_shared<GraphicsDevice>();
     mSwapchain = std::make_shared<SwapchainVK>();
 
     CreateInstance();
@@ -12,8 +13,8 @@ Flux::Gfx::Context::Context(GLFWwindow* aWindow)
     CreateLogicalDevice();
 
     VmaAllocatorCreateInfo allocatorInfo = {};
-    allocatorInfo.physicalDevice = physicalDevice;
-    allocatorInfo.device = device;
+    allocatorInfo.physicalDevice = mDevice->mPhysicalDevice;;
+    allocatorInfo.device = mDevice->mDevice;
     allocatorInfo.instance = instance;
     allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
 
@@ -28,9 +29,9 @@ void Flux::Gfx::Context::Cleanup()
     }
 
     vmaDestroyAllocator(memoryAllocator);
-    vkDestroyDevice(device, nullptr);
+    vkDestroyDevice(mDevice->mDevice, nullptr);
 
-    vkDestroySurfaceKHR(instance, surface, nullptr);
+    vkDestroySurfaceKHR(instance, mSwapchain->surface, nullptr);
     vkDestroyInstance(instance, nullptr);
 
 }
@@ -79,19 +80,19 @@ void Flux::Gfx::Context::PickPhysicalDevice()
 
     for (const auto& device : devices) {
         if (IsDeviceSuitable(device)) {
-            physicalDevice = device;
+            mDevice->mPhysicalDevice = device;
             break;
         }
     }
 
-    if (physicalDevice == VK_NULL_HANDLE) {
+    if (mDevice->mPhysicalDevice == VK_NULL_HANDLE) {
         throw std::runtime_error("failed to find a suitable GPU!");
     }
 }
 
 void Flux::Gfx::Context::CreateLogicalDevice()
 {
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+    QueueFamilyIndices indices = findQueueFamilies(mDevice->mPhysicalDevice);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
@@ -128,12 +129,12 @@ void Flux::Gfx::Context::CreateLogicalDevice()
         createInfo.enabledLayerCount = 0;
     }
 
-    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+    if (vkCreateDevice(mDevice->mPhysicalDevice, &createInfo, nullptr, &mDevice->mDevice) != VK_SUCCESS) {
         throw std::runtime_error("failed to create logical device!");
     }
 
-    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+    vkGetDeviceQueue(mDevice->mDevice, indices.graphicsFamily.value(), 0, &mQueueGraphics.mVkQueue);
+    vkGetDeviceQueue(mDevice->mDevice, indices.presentFamily.value(), 0, &mQueuePresent.mVkQueue);
 }
 
 std::vector<const char*> Flux::Gfx::Context::GetRequiredExtensions() {
@@ -218,7 +219,7 @@ void Flux::Gfx::Context::CreateInstance()
 
 void Flux::Gfx::Context::CreateSurface()
 {
-    if (glfwCreateWindowSurface(instance, mWindow, nullptr, &surface) != VK_SUCCESS) {
+    if (glfwCreateWindowSurface(instance, mWindow, nullptr, &mSwapchain->surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
 }
@@ -239,7 +240,7 @@ Flux::Gfx::Context::QueueFamilyIndices Flux::Gfx::Context::findQueueFamilies(VkP
         }
 
         VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, mSwapchain->surface, &presentSupport);
 
         if (presentSupport) {
             indices.presentFamily = i;
@@ -279,29 +280,29 @@ void Flux::Gfx::Context::SetupDebugMessenger()
 Flux::Gfx::Context::SwapChainSupportDetails Flux::Gfx::Context::QuerySwapChainSupport(VkPhysicalDevice device) {
     SwapChainSupportDetails details;
 
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, mSwapchain->surface, &details.capabilities);
 
     uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, mSwapchain->surface, &formatCount, nullptr);
 
     if (formatCount != 0) {
         details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, mSwapchain->surface, &formatCount, details.formats.data());
     }
 
     uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, mSwapchain->surface, &presentModeCount, nullptr);
 
     if (presentModeCount != 0) {
         details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, mSwapchain->surface, &presentModeCount, details.presentModes.data());
     }
 
     return details;
 }
 void Flux::Gfx::Context::CreateSwapChain()
 {
-    SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(physicalDevice);
+    SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(mDevice->mPhysicalDevice);
 
     VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
@@ -314,7 +315,7 @@ void Flux::Gfx::Context::CreateSwapChain()
 
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = surface;
+    createInfo.surface = mSwapchain->surface;
 
     createInfo.minImageCount = imageCount;
     createInfo.imageFormat = surfaceFormat.format;
@@ -323,7 +324,7 @@ void Flux::Gfx::Context::CreateSwapChain()
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+    QueueFamilyIndices indices = findQueueFamilies(mDevice->mPhysicalDevice);
     uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
     if (indices.graphicsFamily != indices.presentFamily) {
@@ -340,28 +341,24 @@ void Flux::Gfx::Context::CreateSwapChain()
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
 
-    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &mSwapchain->mSwapChain) != VK_SUCCESS) {
+    if (vkCreateSwapchainKHR(mDevice->mDevice, &createInfo, nullptr, &mSwapchain->mSwapChain) != VK_SUCCESS) {
         throw std::runtime_error("failed to create swap chain!");
     }
 
-    vkGetSwapchainImagesKHR(device, mSwapchain->mSwapChain, &imageCount, nullptr);
+    vkGetSwapchainImagesKHR(mDevice->mDevice, mSwapchain->mSwapChain, &imageCount, nullptr);
     mSwapchain->mImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(device, mSwapchain->mSwapChain, &imageCount, mSwapchain->mImages.data());
+    vkGetSwapchainImagesKHR(mDevice->mDevice, mSwapchain->mSwapChain, &imageCount, mSwapchain->mImages.data());
 
     mSwapchain->mImageFormat = surfaceFormat.format;
     mSwapchain->mExtent = extent;
 }
 
-void Flux::Gfx::Context::IdleDevice()
-{
-    vkDeviceWaitIdle(device);
-}
 
 VkFormat Flux::Gfx::Context::FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 {
     for (VkFormat format : candidates) {
         VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
+        vkGetPhysicalDeviceFormatProperties(mDevice->mPhysicalDevice, format, &props);
 
         if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
             return format;

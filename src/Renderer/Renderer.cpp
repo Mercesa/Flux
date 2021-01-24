@@ -1,15 +1,9 @@
 #include "Renderer.h"
 
-#include "Renderer/BufferVK.h"
-#include "Renderer/TextureVK.h"
-
 using namespace Flux;
 
+using namespace Flux::Gfx;
 
-Flux::Renderer::Renderer(GLFWwindow* aWindow)
-{
-	mContext = std::shared_ptr<Flux::Gfx::Context>(new Flux::Gfx::Context(aWindow));
-}
 
 VkShaderModule Renderer::CreateShaderModule(VkDevice aDevice, const std::vector<char>& code) {
 
@@ -60,7 +54,7 @@ void Renderer::EndSingleTimeCommands(VkDevice aDevice, VkQueue aQueue, VkCommand
 	vkFreeCommandBuffers(aDevice, aCmdPool, 1, &aCommandBuffer);
 }
 
-void Flux::Renderer::TransitionImageLayout(VkDevice aDevice, VkQueue aQueue, VkCommandPool aPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+void Flux::Gfx::Renderer::TransitionImageLayout(VkDevice aDevice, VkQueue aQueue, VkCommandPool aPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
 	VkCommandBuffer commandBuffer = this->BeginSingleTimeCommands(aDevice, aPool);
 
@@ -116,7 +110,7 @@ void Flux::Renderer::TransitionImageLayout(VkDevice aDevice, VkQueue aQueue, VkC
 
 }
 
-void Flux::Renderer::CreateBuffer(VkDevice aDevice, VmaAllocator aAllocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage properties, VkBuffer& buffer, VmaAllocation& bufferMemory)
+void Flux::Gfx::Renderer::CreateBuffer(VkDevice aDevice, VmaAllocator aAllocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage properties, VkBuffer& buffer, VmaAllocation& bufferMemory)
 {
 	VkBufferCreateInfo bufferInfo{};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -131,9 +125,9 @@ void Flux::Renderer::CreateBuffer(VkDevice aDevice, VmaAllocator aAllocator, VkD
 	vmaCreateBuffer(aAllocator, &bufferInfo, &allocInfo, &buffer, &bufferMemory, nullptr);
 }
 
-std::shared_ptr<BufferVK> Renderer::CreateAndUploadBuffer(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator, VmaMemoryUsage aBufferUsage, VkBufferUsageFlags aBufferFlags, void* aData, size_t aDataSize)
+std::shared_ptr<Gfx::BufferGPU> Renderer::CreateAndUploadBuffer(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator, VmaMemoryUsage aBufferUsage, VkBufferUsageFlags aBufferFlags, void* aData, size_t aDataSize)
 {
-	std::shared_ptr<BufferVK> tReturnBuffer = std::make_shared<BufferVK>();
+	std::shared_ptr<Gfx::BufferGPU> tReturnBuffer = std::make_shared<Gfx::BufferGPU>();
 
 	VkBuffer stagingBuffer;
 	VmaAllocation stagingBufferMemory;
@@ -197,12 +191,12 @@ VkImageView Renderer::CreateImageView(VkDevice aDevice, VkImage image, VkFormat 
 	return imageView;
 }
 
-std::shared_ptr<TextureVK> Renderer::CreateAndUploadTexture(
+std::shared_ptr<Texture> Renderer::CreateAndUploadTexture(
 	VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator,
 	uint32_t aWidth, uint32_t aHeight, uint32_t aImgSize, unsigned char* aImageData,
 	VkFormat aFormat ) {
 
-	std::shared_ptr<TextureVK> tReturnTexture = std::make_shared<TextureVK>();
+	std::shared_ptr<Texture> tReturnTexture = std::make_shared<Texture>();
 
 	VkBuffer stagingBuffer;
 	VmaAllocation stagingBufferMemory;

@@ -26,7 +26,8 @@
 #include "Renderer/Reflection.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/TextureVK.h"
-#include "Renderer/BufferVK.h"
+#include "Renderer/BufferGPU.h"
+#include "Renderer/Queue.h"
 
 #include "Application/BasicGeometry.h"
 #include "Application/Scene/iScene.h"
@@ -50,7 +51,7 @@ const bool enableValidationLayers = true;
 namespace Flux
 {
 	class Camera;
-	class SwapchainVK;
+	class Swapchain;
 	class CustomRenderer
 	{
 	public:
@@ -96,7 +97,7 @@ namespace Flux
 
 		bool mVsync;
 
-		std::shared_ptr<TextureVK> mEmptyTexture;
+		std::shared_ptr<Flux::Gfx::Texture> mEmptyTexture;
 
 		VkSampler textureSampler;
 
@@ -113,7 +114,6 @@ namespace Flux
 		VkDescriptorSetLayout descriptorSetLayoutSceneObjects;
 		std::vector<VkDescriptorSet> descriptorSetsSceneObjects;
 
-		VkDescriptorPool descriptorPool;
 
 		VkCommandPool commandPool;
 		std::vector<VkCommandBuffer> commandBuffers;
@@ -124,15 +124,15 @@ namespace Flux
 		std::vector<VkFence> imagesInFlight;
 		size_t currentFrame = 0;
 
-		std::vector<std::shared_ptr<BufferVK>> mSceneBuffers;
-		std::vector<std::shared_ptr<TextureVK>> mSceneTextures;
+		std::vector<std::shared_ptr<Gfx::BufferGPU>> mSceneBuffers;
+		std::vector<std::shared_ptr<Flux::Gfx::Texture>> mSceneTextures;
 		std::vector<std::shared_ptr<VkDescriptorSet>> mSceneSets;
 		std::vector<std::pair<RenderState, VkPipeline>> mPipelines;
 
 		std::unique_ptr<RenderingResourceManager> mResourceManager;
 
 
-		std::vector<std::shared_ptr<BufferVK>> mBuffers;
+		std::vector<std::shared_ptr<Gfx::BufferGPU>> mBuffers;
 
 		bool framebufferResized = false;
 
@@ -148,9 +148,6 @@ namespace Flux
 
 		void RecreateSwapChain();
 
-		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectMask);
-
-		void CreateImageViews();
 
 		void CreateRenderPass();
 
@@ -164,15 +161,9 @@ namespace Flux
 
 		void CreateCommandPool();
 
-		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage properties, VkImage& image, VmaAllocation& imageMemory);
-
-		void CreateDepthResources();
-
 		void CreateTextureSampler();
 
 		void CreateUniformBuffers();
-
-		void CreateDescriptorPool();
 
 	    void CreateDescriptorSets();
 
@@ -182,12 +173,7 @@ namespace Flux
 
 		void UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<Camera> aCam);
 
-
-
 		GLFWwindow* mWindow;
-
-
-
 
 		static std::vector<char> readFile(const std::string& filename) {
 			std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -208,14 +194,18 @@ namespace Flux
 		}
 
 
-
-
-
 		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 
 		public:
-		std::shared_ptr<Renderer> mRenderer;
+		std::shared_ptr<Flux::Gfx::Renderer> mRenderer;
+		std::shared_ptr<Flux::Gfx::RenderContext> mRenderContext;
+		std::shared_ptr<Flux::Gfx::Swapchain> mSwapchain;
+		std::shared_ptr<Flux::Gfx::Queue> mQueueGraphics;
+		std::shared_ptr<Flux::Gfx::Queue> mQueuePresent;
+		std::shared_ptr<Flux::Gfx::DescriptorPool> mDescriptorPool;
+
+
 	};
 
 }

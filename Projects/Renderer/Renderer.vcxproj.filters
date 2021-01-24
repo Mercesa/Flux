@@ -19,12 +19,6 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.cpp" />
-    <ClCompile Include="..\..\src\Renderer\SwapchainVK.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\Renderer\Context.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\External\SPIRV-Reflect-master\spirv_reflect.h">
@@ -40,16 +34,25 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.h" />
-    <ClInclude Include="..\..\src\Renderer\SwapchainVK.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\Renderer\BufferVK.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\Renderer\TextureVK.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Renderer\Context.h">
+    <ClInclude Include="..\..\src\Renderer\GraphicsDevice.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Renderer\Queue.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Renderer\Swapchain.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Renderer\BufferGPU.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Renderer\RenderContext.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Renderer\DescriptorPool.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

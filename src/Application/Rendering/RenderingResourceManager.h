@@ -26,8 +26,8 @@ public:
 	// Will relate a resource asset to a vulkan asset
 
 	// Bool: Returns if texture can be registered or not
-	std::optional<std::shared_ptr<Flux::TextureVK>> QueryTextureAssetRegistered(std::shared_ptr<Flux::TextureAsset> aTextureAsset) const;
-	bool RegisterTextureData(std::pair < std::shared_ptr<Flux::TextureAsset>, std::shared_ptr<Flux::TextureVK>> aTexturePair);
+	std::optional<std::shared_ptr<Flux::Gfx::Texture>> QueryTextureAssetRegistered(std::shared_ptr<Flux::TextureAsset> aTextureAsset) const;
+	bool RegisterTextureData(std::pair < std::shared_ptr<Flux::TextureAsset>, std::shared_ptr<Flux::Gfx::Texture>> aTexturePair);
 	// Update will check the resources currently there and how many references they have, if no references. Feel free to delete.
 
 	std::optional<std::shared_ptr<Flux::Material>> QueryMaterialAssetRegistered(std::shared_ptr<Flux::Material> aMeshAsset) const;
@@ -39,7 +39,7 @@ private:
 	RenderingResourceManager(const RenderingResourceManager&) = delete;
 	RenderingResourceManager& operator= (const RenderingResourceManager&) = delete;
 
-	std::vector<std::pair<std::shared_ptr<Flux::TextureAsset>, std::shared_ptr<Flux::TextureVK>>> mTextures;
+	std::vector<std::pair<std::shared_ptr<Flux::TextureAsset>, std::shared_ptr<Flux::Gfx::Texture>>> mTextures;
 	std::vector<std::shared_ptr<Flux::Material>> mMaterials;
 	std::vector<VkDescriptorSet> mSets;
 };

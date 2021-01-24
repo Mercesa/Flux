@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 
-#include "Renderer/BufferVK.h"
+#include "Renderer/BufferGPU.h"
 
 namespace Flux
 {
@@ -11,7 +11,7 @@ public:
 	MeshVK() = default;
 	~MeshVK() = default;
 
-	std::shared_ptr<BufferVK> mVertexBuffer = nullptr;
-	std::shared_ptr<BufferVK> mIndexBuffer = nullptr;
+	std::shared_ptr<Gfx::BufferGPU> mVertexBuffer = nullptr;
+	std::shared_ptr<Gfx::BufferGPU> mIndexBuffer = nullptr;
 };
 }

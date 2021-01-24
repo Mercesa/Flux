@@ -4,19 +4,37 @@
 #include "Application/Camera.h"
 #include "Application/Scene/iSceneObject.h"
 
-#include "Renderer/SwapchainVK.h"
+#include "Renderer/Swapchain.h"
 #include "Common/AssetProcessing/ModelReaderAssimp.h"
 
 
 #include <stb_image.h>
 using namespace Flux;
+using namespace Flux::Gfx;
 
-#include "Renderer/BufferVK.h"
 
-Flux::CustomRenderer::CustomRenderer(GLFWwindow* aWindow) : mVsync(true)
+#include "Renderer/BufferGPU.h"
+
+Flux::CustomRenderer::CustomRenderer(GLFWwindow* aWindow) : mVsync(true), mWindow(aWindow)
 {
-    mRenderer = std::make_shared<Renderer>(aWindow);
+    mRenderContext = Renderer::CreateRenderContext("Flux", true, mWindow);
+    mSwapchain = Renderer::CreateSwapChain(mRenderContext, mWindow );
+
+    Flux::Gfx::QueueCreateDesc QueueDesc{};
+
+    QueueDesc.mType = Flux::Gfx::eQueueType::QUEUE_TYPE_GRAPHICS;
+    mQueueGraphics = Renderer::CreateQueue(mRenderContext, &QueueDesc);
+
+    QueueDesc.mType = Flux::Gfx::eQueueType::QUEUE_TYPE_PRESENT;
+    mQueuePresent = Renderer::CreateQueue(mRenderContext, &QueueDesc);
+
+    mRenderer = std::make_shared<Renderer>();
     mResourceManager = std::unique_ptr<RenderingResourceManager>(new RenderingResourceManager());
+
+    Flux::Gfx::DescriptorPoolCreateDesc DescriptorPoolCDesc{};
+    DescriptorPoolCDesc.maxDescriptorSets = 1024;
+
+    mDescriptorPool = Renderer::CreateDescriptorPool(mRenderContext, &DescriptorPoolCDesc);
 }
 
 void Flux::CustomRenderer::Init()
@@ -26,17 +44,14 @@ void Flux::CustomRenderer::Init()
 
 void Flux::CustomRenderer::WaitIdle()
 {
-   vkDeviceWaitIdle(mRenderer->mContext->device);
+   vkDeviceWaitIdle(mRenderContext->mDevice->mDevice);
 }
 
 void CustomRenderer::CustomRenderer::InitVulkan() {
 
-    CreateImageViews();
     CreateRenderPass();
     CreateDescriptorSetLayout();
     CreateCommandPool();
-    CreateDescriptorPool();
-    CreateDepthResources();
     CreateFramebuffers();
     CreateTextureSampler();
     CreateUniformBuffers();
@@ -48,89 +63,84 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
     uint32_t emptyData[1];
     emptyData[0] = 0xFF000000;
     mEmptyTexture =  mRenderer->CreateAndUploadTexture(
-        mRenderer->mContext->device, mRenderer->mContext->graphicsQueue, commandPool, mRenderer->mContext->memoryAllocator,
+        mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
         1, 1,
         sizeof(uint32_t),
         reinterpret_cast<unsigned char*>(emptyData), VK_FORMAT_R8G8B8A8_UNORM);
 }
 
 void CustomRenderer::CustomRenderer::MainLoop() {
-    vkDeviceWaitIdle(mRenderer->mContext->device);
+    vkDeviceWaitIdle(mRenderContext->mDevice->mDevice);
 }
 
-void CustomRenderer::CustomRenderer:: CleanupSwapChain() {
+void CustomRenderer::CustomRenderer::CleanupSwapChain() {
 
-    vmaFreeMemory(this->mRenderer->mContext->memoryAllocator, mRenderer->mContext->mSwapchain->depthImageMemory);
-    vkDestroyImage(mRenderer->mContext->device, mRenderer->mContext->mSwapchain->depthImage, nullptr);
-    vkDestroyImageView(mRenderer->mContext->device, mRenderer->mContext->mSwapchain->depthImageView, nullptr);
-
-    for (auto framebuffer : mRenderer->mContext->mSwapchain->mFramebuffers) {
-        vkDestroyFramebuffer(mRenderer->mContext->device, framebuffer, nullptr);
+    for (auto framebuffer : mSwapchain->mFramebuffers) {
+        vkDestroyFramebuffer(mRenderContext->mDevice->mDevice, framebuffer, nullptr);
     }
-
-    vkFreeCommandBuffers(mRenderer->mContext->device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-
 
     for (auto& e : mPipelines)
     {
-        vkDestroyPipeline(mRenderer->mContext->device, e.second, nullptr);
+        vkDestroyPipeline(mRenderContext->mDevice->mDevice, e.second, nullptr);
     }
 
-    vkDestroyPipelineLayout(mRenderer->mContext->device, pipelineLayoutSceneObjects, nullptr);
-    vkDestroyRenderPass(mRenderer->mContext->device, renderPass, nullptr);
+    mPipelines.clear();
 
-    for (auto imageView : mRenderer->mContext->mSwapchain->mImageViews) {
-        vkDestroyImageView(mRenderer->mContext->device, imageView, nullptr);
-    }
+    vkDestroyPipelineLayout(mRenderContext->mDevice->mDevice, pipelineLayoutSceneObjects, nullptr);
+    vkDestroyRenderPass(mRenderContext->mDevice->mDevice, renderPass, nullptr);
 
-    vkDestroySwapchainKHR(mRenderer->mContext->device, mRenderer->mContext->mSwapchain->mSwapChain, nullptr);
+    Renderer::DestroySwapchain(mRenderContext, mSwapchain);
 
-    for (size_t i = 0; i < mRenderer->mContext->mSwapchain->mImages.size(); i++) {
-        vkDestroyBuffer(mRenderer->mContext->device, uniformBufferCameraBuffer[i], nullptr);
-        vmaFreeMemory(this->mRenderer->mContext->memoryAllocator, uniformBufferCameraMemory[i]);
-    }
+    vkFreeDescriptorSets(mRenderContext->mDevice->mDevice, mDescriptorPool->mPool, descriptorSetsSceneObjects.size(), descriptorSetsSceneObjects.data());
 
-    vkFreeDescriptorSets(mRenderer->mContext->device, descriptorPool, descriptorSetsSceneObjects.size(), descriptorSetsSceneObjects.data());
 }
 
 void CustomRenderer::Cleanup() {
     CleanupSwapChain();
 
-    vkDestroySampler(mRenderer->mContext->device, textureSampler, nullptr);
+    vkDestroySampler(mRenderContext->mDevice->mDevice, textureSampler, nullptr);
 
-    vkDestroyImageView(mRenderer->mContext->device, mEmptyTexture->mView, nullptr);
-    vkDestroyImage(mRenderer->mContext->device, mEmptyTexture->mImage, nullptr);
-    vmaFreeMemory(mRenderer->mContext->memoryAllocator, mEmptyTexture->mAllocation);
+    vkDestroyImageView(mRenderContext->mDevice->mDevice, mEmptyTexture->mView, nullptr);
+    vkDestroyImage(mRenderContext->mDevice->mDevice, mEmptyTexture->mImage, nullptr);
+    vmaFreeMemory(mRenderContext->memoryAllocator, mEmptyTexture->mAllocation);
 
-
-    vkDestroyDescriptorPool(mRenderer->mContext->device, this->descriptorPool, nullptr);
-
-    vkDestroyDescriptorSetLayout(mRenderer->mContext->device, descriptorSetLayout, nullptr);
-    vkDestroyDescriptorSetLayout(mRenderer->mContext->device, descriptorSetLayoutSceneObjects, nullptr);
-
+    vkDestroyDescriptorSetLayout(mRenderContext->mDevice->mDevice, descriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(mRenderContext->mDevice->mDevice, descriptorSetLayoutSceneObjects, nullptr);
 
     for (auto& buffer : mSceneBuffers)
     {
-        vkDestroyBuffer(mRenderer->mContext->device, buffer->mBuffer, nullptr);
-        vmaFreeMemory(mRenderer->mContext->memoryAllocator, buffer->mAllocation);
+        vkDestroyBuffer(mRenderContext->mDevice->mDevice, buffer->mBuffer, nullptr);
+        vmaFreeMemory(mRenderContext->memoryAllocator, buffer->mAllocation);
     }
 
     for (auto& texture : mSceneTextures)
     {
-        vkDestroyImageView(mRenderer->mContext->device, texture->mView, nullptr);
-        vkDestroyImage(mRenderer->mContext->device, texture->mImage, nullptr);
-        vmaFreeMemory(mRenderer->mContext->memoryAllocator, texture->mAllocation);
+        vkDestroyImageView(mRenderContext->mDevice->mDevice, texture->mView, nullptr);
+        vkDestroyImage(mRenderContext->mDevice->mDevice, texture->mImage, nullptr);
+        vmaFreeMemory(mRenderContext->memoryAllocator, texture->mAllocation);
     }
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vkDestroySemaphore(mRenderer->mContext->device, renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(mRenderer->mContext->device, imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(mRenderer->mContext->device, inFlightFences[i], nullptr);
+        vkDestroySemaphore(mRenderContext->mDevice->mDevice, renderFinishedSemaphores[i], nullptr);
+        vkDestroySemaphore(mRenderContext->mDevice->mDevice, imageAvailableSemaphores[i], nullptr);
+        vkDestroyFence(mRenderContext->mDevice->mDevice, inFlightFences[i], nullptr);
     }
 
-    vkDestroyCommandPool(mRenderer->mContext->device, commandPool, nullptr);
+    for (size_t i = 0; i < mSwapchain->mImages.size(); i++) {
+        vkDestroyBuffer(mRenderContext->mDevice->mDevice, uniformBufferCameraBuffer[i], nullptr);
+        vmaFreeMemory(this->mRenderContext->memoryAllocator, uniformBufferCameraMemory[i]);
+    }
+
+
+    vkFreeCommandBuffers(mRenderContext->mDevice->mDevice, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+
+    Renderer::DestroyDescriptorPool(mRenderContext, mDescriptorPool);
+
+    vkDestroyCommandPool(mRenderContext->mDevice->mDevice, commandPool, nullptr);
 
     glfwTerminate();
+
+    Renderer::DestroyRenderContext(mRenderContext);
 }
 
 void CustomRenderer::RecreateSwapChain() {
@@ -141,50 +151,24 @@ void CustomRenderer::RecreateSwapChain() {
         glfwWaitEvents();
     }
 
-    vkDeviceWaitIdle(mRenderer->mContext->device);
+    vkDeviceWaitIdle(mRenderContext->mDevice->mDevice);
 
     CleanupSwapChain();
 
-    CreateImageViews();
+    mSwapchain = Renderer::CreateSwapChain(mRenderContext, mWindow);
+
     CreateRenderPass();
     CreateFramebuffers();
-    CreateUniformBuffers();
-    CreateDescriptorPool();
+
+    Flux::Gfx::DescriptorPoolCreateDesc DescriptorPoolCDesc{};
+    DescriptorPoolCDesc.maxDescriptorSets = 1024;
+
     CreateDescriptorSets();
-    CreateCommandBuffers();
-}
-
-VkImageView CustomRenderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectMask) {
-    VkImageViewCreateInfo viewInfo{};
-    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = image;
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = format;
-    viewInfo.subresourceRange.aspectMask = aspectMask;
-    viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = 1;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
-
-    VkImageView imageView;
-    if (vkCreateImageView(mRenderer->mContext->device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture image view!");
-    }
-
-    return imageView;
-}
-
-void CustomRenderer::CreateImageViews() {
-    mRenderer->mContext->mSwapchain->mImageViews.resize(mRenderer->mContext->mSwapchain->mImages.size());
-
-    for (size_t i = 0; i < mRenderer->mContext->mSwapchain->mImages.size(); i++) {
-        mRenderer->mContext->mSwapchain->mImageViews[i] = CreateImageView(mRenderer->mContext->mSwapchain->mImages[i], mRenderer->mContext->mSwapchain->mImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-    }
 }
 
 void CustomRenderer::CreateRenderPass() {
     VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = mRenderer->mContext->mSwapchain->mImageFormat;
+    colorAttachment.format = mSwapchain->mImageFormat;
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -194,7 +178,7 @@ void CustomRenderer::CreateRenderPass() {
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = mRenderer->mContext->FindDepthFormat();
+    depthAttachment.format = mRenderer->FindDepthFormat(mRenderContext);
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -236,7 +220,7 @@ void CustomRenderer::CreateRenderPass() {
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
 
-    if (vkCreateRenderPass(mRenderer->mContext->device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+    if (vkCreateRenderPass(mRenderContext->mDevice->mDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");
     }
 }
@@ -302,7 +286,7 @@ VkPipeline Flux::CustomRenderer::CreateGraphicsPipelineForState(RenderState stat
     {
         auto shaderCode = readFile(e.second);
 
-        VkShaderModule shaderModule = mRenderer->CreateShaderModule(mRenderer->mContext->device, shaderCode);
+        VkShaderModule shaderModule = mRenderer->CreateShaderModule(mRenderContext->mDevice->mDevice, shaderCode);
 
         VkPipelineShaderStageCreateInfo shaderStageInfo{};
         shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -363,14 +347,14 @@ VkPipeline Flux::CustomRenderer::CreateGraphicsPipelineForState(RenderState stat
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = (float)mRenderer->mContext->mSwapchain->mExtent.width;
-    viewport.height = (float)mRenderer->mContext->mSwapchain->mExtent.height;
+    viewport.width = (float)mSwapchain->mExtent.width;
+    viewport.height = (float)mSwapchain->mExtent.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
     VkRect2D scissor{};
     scissor.offset = { 0, 0 };
-    scissor.extent = mRenderer->mContext->mSwapchain->mExtent;
+    scissor.extent = mSwapchain->mExtent;
 
     VkPipelineViewportStateCreateInfo viewportState{};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -424,7 +408,7 @@ VkPipeline Flux::CustomRenderer::CreateGraphicsPipelineForState(RenderState stat
     VkDescriptorSetLayout layouts[2] = { descriptorSetLayout, descriptorSetLayoutSceneObjects };
     pipelineLayoutInfo.pSetLayouts = layouts;
 
-    if (vkCreatePipelineLayout(mRenderer->mContext->device, &pipelineLayoutInfo, nullptr, &pipelineLayoutSceneObjects) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(mRenderContext->mDevice->mDevice, &pipelineLayoutInfo, nullptr, &pipelineLayoutSceneObjects) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
@@ -459,13 +443,13 @@ VkPipeline Flux::CustomRenderer::CreateGraphicsPipelineForState(RenderState stat
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
     VkPipeline tPipeline;
-    if (vkCreateGraphicsPipelines(mRenderer->mContext->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &tPipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(mRenderContext->mDevice->mDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &tPipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
     for (auto& shaderModule : modules)
     {
-        vkDestroyShaderModule(mRenderer->mContext->device, shaderModule, nullptr);
+        vkDestroyShaderModule(mRenderContext->mDevice->mDevice, shaderModule, nullptr);
     }
 
     return tPipeline;
@@ -515,7 +499,7 @@ void CustomRenderer::CreateDescriptorSetLayout()
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
 
-        if (vkCreateDescriptorSetLayout(mRenderer->mContext->device, &layoutInfo, nullptr, &descriptorSetLayout))
+        if (vkCreateDescriptorSetLayout(mRenderContext->mDevice->mDevice, &layoutInfo, nullptr, &descriptorSetLayout))
         {
             throw std::runtime_error("failed to create descriptor set layout!");
         }
@@ -556,7 +540,7 @@ void CustomRenderer::CreateDescriptorSetLayout()
         layoutInfoSceneObject.bindingCount = static_cast<uint32_t>(bindingsSceneObject.size());
         layoutInfoSceneObject.pBindings = bindingsSceneObject.data();
 
-        if (vkCreateDescriptorSetLayout(mRenderer->mContext->device, &layoutInfoSceneObject, nullptr, &descriptorSetLayoutSceneObjects))
+        if (vkCreateDescriptorSetLayout(mRenderContext->mDevice->mDevice, &layoutInfoSceneObject, nullptr, &descriptorSetLayoutSceneObjects))
         {
             throw std::runtime_error("failed to create descriptor set layout!");
         }
@@ -565,12 +549,12 @@ void CustomRenderer::CreateDescriptorSetLayout()
 }
 
 void CustomRenderer::CreateFramebuffers() {
-    mRenderer->mContext->mSwapchain->mFramebuffers.resize(mRenderer->mContext->mSwapchain->mImageViews.size());
+    mSwapchain->mFramebuffers.resize(mSwapchain->mImageViews.size());
 
-    for (size_t i = 0; i < mRenderer->mContext->mSwapchain->mImageViews.size(); i++) {
+    for (size_t i = 0; i < mSwapchain->mImageViews.size(); i++) {
         std::array<VkImageView, 2> attachments = {
-            mRenderer->mContext->mSwapchain->mImageViews[i],
-            mRenderer->mContext->mSwapchain->depthImageView
+            mSwapchain->mImageViews[i],
+            mSwapchain->depthImageView
         };
 
         VkFramebufferCreateInfo framebufferInfo{};
@@ -578,58 +562,27 @@ void CustomRenderer::CreateFramebuffers() {
         framebufferInfo.renderPass = renderPass;
         framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());;
         framebufferInfo.pAttachments = attachments.data();
-        framebufferInfo.width = mRenderer->mContext->mSwapchain->mExtent.width;
-        framebufferInfo.height = mRenderer->mContext->mSwapchain->mExtent.height;
+        framebufferInfo.width = mSwapchain->mExtent.width;
+        framebufferInfo.height = mSwapchain->mExtent.height;
         framebufferInfo.layers = 1;
 
-        if (vkCreateFramebuffer(mRenderer->mContext->device, &framebufferInfo, nullptr, &mRenderer->mContext->mSwapchain->mFramebuffers[i]) != VK_SUCCESS) {
+        if (vkCreateFramebuffer(mRenderContext->mDevice->mDevice, &framebufferInfo, nullptr, &mSwapchain->mFramebuffers[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create framebuffer!");
         }
     }
 }
 
 void CustomRenderer::CreateCommandPool() {
-    Flux::Gfx::Context::QueueFamilyIndices queueFamilyIndices = mRenderer->mContext->findQueueFamilies(mRenderer->mContext->physicalDevice);
+    Flux::Gfx::QueueFamilyIndices queueFamilyIndices = mRenderer->findQueueFamilies(mRenderContext->mDevice->mPhysicalDevice, mRenderContext->surface);
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-    if (vkCreateCommandPool(mRenderer->mContext->device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+    if (vkCreateCommandPool(mRenderContext->mDevice->mDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create command pool!");
     }
-}
-
-void CustomRenderer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage properties, VkImage& image, VmaAllocation& imageMemory) {
-    VkImageCreateInfo imageInfo{};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = width;
-    imageInfo.extent.height = height;
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = 1;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = format;
-    imageInfo.tiling = tiling;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = usage;
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    VmaAllocationCreateInfo allocInfo = {};
-    allocInfo.usage = properties;
-
-    vmaCreateImage(mRenderer->mContext->memoryAllocator, &imageInfo, &allocInfo, &image, &imageMemory, nullptr);
-}
-
-void CustomRenderer::CreateDepthResources()
-{
-    VkFormat depthFormat = mRenderer->mContext->FindDepthFormat();
-    CreateImage(mRenderer->mContext->mSwapchain->mExtent.width, mRenderer->mContext->mSwapchain->mExtent.height, depthFormat,
-    VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY,
-    mRenderer->mContext->mSwapchain->depthImage, mRenderer->mContext->mSwapchain->depthImageMemory);
-    mRenderer->mContext->mSwapchain->depthImageView = CreateImageView(mRenderer->mContext->mSwapchain->depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 void CustomRenderer::CreateTextureSampler()
@@ -652,68 +605,39 @@ void CustomRenderer::CreateTextureSampler()
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = 0.0f;
 
-    if (vkCreateSampler(mRenderer->mContext->device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
+    if (vkCreateSampler(mRenderContext->mDevice->mDevice, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 }
 
 void CustomRenderer::CreateUniformBuffers()
 {
-    uniformBufferCameraBuffer.resize(mRenderer->mContext->mSwapchain->mImages.size());
-    uniformBufferCameraMemory.resize(mRenderer->mContext->mSwapchain->mImages.size());
+    uniformBufferCameraBuffer.resize(mSwapchain->mImages.size());
+    uniformBufferCameraMemory.resize(mSwapchain->mImages.size());
 
-    for (size_t i = 0; i < mRenderer->mContext->mSwapchain->mImages.size(); i++)
+    for (size_t i = 0; i < mSwapchain->mImages.size(); i++)
     {
-        mRenderer->CreateBuffer(mRenderer->mContext->device, mRenderer->mContext->memoryAllocator, sizeof(UniformBufferCamera), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, uniformBufferCameraBuffer[i], uniformBufferCameraMemory[i]);
+        mRenderer->CreateBuffer(mRenderContext->mDevice->mDevice, mRenderContext->memoryAllocator, sizeof(UniformBufferCamera), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, uniformBufferCameraBuffer[i], uniformBufferCameraMemory[i]);
     }
 }
 
-void CustomRenderer::CreateDescriptorPool()
-{
-    std::vector<VkDescriptorPoolSize> descriptorPoolSizes =
-    {
-        { VK_DESCRIPTOR_TYPE_SAMPLER, 1024 },
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 512 },
-        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 8192 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1024 },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1024 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1024 },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 8192 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1024 },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1024 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1 },
-        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1 },
-    };
-
-    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{};
-    descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size());
-    descriptorPoolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
-    descriptorPoolCreateInfo.maxSets = 1000;
-    descriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-
-    if (vkCreateDescriptorPool(mRenderer->mContext->device, &descriptorPoolCreateInfo, nullptr, &descriptorPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error(" Failed to create descriptor pool");
-    }
-}
 
 void CustomRenderer::CreateDescriptorSets()
 {
-    std::vector<VkDescriptorSetLayout> layouts(mRenderer->mContext->mSwapchain->mImages.size(), descriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> layouts(mSwapchain->mImages.size(), descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = descriptorPool;
-    allocInfo.descriptorSetCount = static_cast<uint32_t>(mRenderer->mContext->mSwapchain->mImages.size());
+    allocInfo.descriptorPool = mDescriptorPool->mPool;
+    allocInfo.descriptorSetCount = static_cast<uint32_t>(mSwapchain->mImages.size());
     allocInfo.pSetLayouts = layouts.data();
 
-    descriptorSetsSceneObjects.resize(mRenderer->mContext->mSwapchain->mImages.size());
-    if (vkAllocateDescriptorSets(mRenderer->mContext->device, &allocInfo, descriptorSetsSceneObjects.data()) != VK_SUCCESS)
+    descriptorSetsSceneObjects.resize(mSwapchain->mImages.size());
+    if (vkAllocateDescriptorSets(mRenderContext->mDevice->mDevice, &allocInfo, descriptorSetsSceneObjects.data()) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allcoate descriptor sets!");
     }
 
-    for (size_t i = 0; i < mRenderer->mContext->mSwapchain->mImages.size(); i++)
+    for (size_t i = 0; i < mSwapchain->mImages.size(); i++)
     {
         VkDescriptorBufferInfo bufferInfoCamera{};
         bufferInfoCamera.buffer = uniformBufferCameraBuffer[i];
@@ -731,12 +655,12 @@ void CustomRenderer::CreateDescriptorSets()
         descriptorWrites[0].pBufferInfo = &bufferInfoCamera;
 
 
-        vkUpdateDescriptorSets(mRenderer->mContext->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(mRenderContext->mDevice->mDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }
 
 void CustomRenderer::CreateCommandBuffers() {
-    commandBuffers.resize(mRenderer->mContext->mSwapchain->mFramebuffers.size());
+    commandBuffers.resize(mSwapchain->mFramebuffers.size());
 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -744,7 +668,7 @@ void CustomRenderer::CreateCommandBuffers() {
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
-    if (vkAllocateCommandBuffers(mRenderer->mContext->device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
+    if (vkAllocateCommandBuffers(mRenderContext->mDevice->mDevice, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 }
@@ -753,7 +677,7 @@ void CustomRenderer::CreateSyncObjects() {
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-    imagesInFlight.resize(mRenderer->mContext->mSwapchain->mImages.size(), VK_NULL_HANDLE);
+    imagesInFlight.resize(mSwapchain->mImages.size(), VK_NULL_HANDLE);
 
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -763,9 +687,9 @@ void CustomRenderer::CreateSyncObjects() {
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        if (vkCreateSemaphore(mRenderer->mContext->device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(mRenderer->mContext->device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(mRenderer->mContext->device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+        if (vkCreateSemaphore(mRenderContext->mDevice->mDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(mRenderContext->mDevice->mDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateFence(mRenderContext->mDevice->mDevice, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
         }
     }
@@ -785,12 +709,12 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
             const auto tAsset = object->mAsset;
 
             object->mMesh->mVertexBuffer = mRenderer->CreateAndUploadBuffer(
-                mRenderer->mContext->device, mRenderer->mContext->graphicsQueue, commandPool, mRenderer->mContext->memoryAllocator,
+                mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
                 VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 tAsset->mVertexData.data(), sizeof(tAsset->mVertexData[0]) * tAsset->mVertexData.size());
 
             object->mMesh->mIndexBuffer = mRenderer->CreateAndUploadBuffer(
-                mRenderer->mContext->device, mRenderer->mContext->graphicsQueue, commandPool, mRenderer->mContext->memoryAllocator,
+                mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
                 VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                 tAsset->mIndices.data(), sizeof(tAsset->mIndices[0]) * tAsset->mIndices.size());
 
@@ -806,7 +730,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
             if (!queryResultTexture.has_value())
             {
                 object->mMaterial->mTextureVK = mRenderer->CreateAndUploadTexture(
-                    mRenderer->mContext->device, mRenderer->mContext->graphicsQueue, commandPool, mRenderer->mContext->memoryAllocator,
+                    mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
                     tAsset->mWidth, tAsset->mHeight,
                     tAsset->mData.size(),
                     tAsset->mData.data(), VK_FORMAT_R8G8B8A8_UNORM);
@@ -824,12 +748,12 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
                 std::vector<VkDescriptorSetLayout> layouts = { descriptorSetLayoutSceneObjects };
                 VkDescriptorSetAllocateInfo allocInfo{};
                 allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-                allocInfo.descriptorPool = descriptorPool;
+                allocInfo.descriptorPool = mDescriptorPool->mPool;
                 allocInfo.descriptorSetCount = 1;
                 allocInfo.pSetLayouts = layouts.data();
 
                 std::vector<VkDescriptorSet> mSet = { object->mMaterial->mDescriptorSet };
-                if (vkAllocateDescriptorSets(mRenderer->mContext->device, &allocInfo, mSet.data()) != VK_SUCCESS)
+                if (vkAllocateDescriptorSets(mRenderContext->mDevice->mDevice, &allocInfo, mSet.data()) != VK_SUCCESS)
                 {
                     throw std::runtime_error("Failed to allocate descriptor sets!");
                 }
@@ -881,7 +805,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 				descriptorWrites[3].descriptorCount = 1;
                 descriptorWrites[3].pImageInfo = &samplerInfo;
 
-				vkUpdateDescriptorSets(mRenderer->mContext->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+				vkUpdateDescriptorSets(mRenderContext->mDevice->mDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
                 object->mMaterial->mDescriptorSet = mSet[0];
 
                 //TODO DELETE ALLOCATED DESCRIPTOR SETS
@@ -901,10 +825,10 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
     }
 
-    vkWaitForFences(mRenderer->mContext->device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(mRenderContext->mDevice->mDevice, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(mRenderer->mContext->device, mRenderer->mContext->mSwapchain->mSwapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(mRenderContext->mDevice->mDevice, mSwapchain->mSwapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         RecreateSwapChain();
@@ -915,7 +839,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
     }
 
     if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
-        vkWaitForFences(mRenderer->mContext->device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+        vkWaitForFences(mRenderContext->mDevice->mDevice, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
     }
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
@@ -932,9 +856,9 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = mRenderer->mContext->mSwapchain->mFramebuffers[imageIndex];
+    renderPassInfo.framebuffer = mSwapchain->mFramebuffers[imageIndex];
     renderPassInfo.renderArea.offset = { 0, 0 };
-    renderPassInfo.renderArea.extent = mRenderer->mContext->mSwapchain->mExtent;
+    renderPassInfo.renderArea.extent = mSwapchain->mExtent;
 
     std::array<VkClearValue, 2> clearValues{};
     clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -952,6 +876,14 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
         {
             continue;
         }
+
+        if (!QueryPipeline(object->mRenderState))
+        {
+            object->mRenderState.stateID = std::nullopt;
+            continue;
+        }
+
+
         vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, this->mPipelines[object->mRenderState.stateID.value()].second);
         std::vector<VkDescriptorSet> objectSets = { descriptorSetsSceneObjects[imageIndex], object->mMaterial->mDescriptorSet };
         vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayoutSceneObjects, 0, objectSets.size(), objectSets.data(), 0, nullptr);
@@ -994,9 +926,9 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    vkResetFences(mRenderer->mContext->device, 1, &inFlightFences[currentFrame]);
+    vkResetFences(mRenderContext->mDevice->mDevice, 1, &inFlightFences[currentFrame]);
 
-    if (vkQueueSubmit(mRenderer->mContext->graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+    if (vkQueueSubmit(mQueueGraphics->mVkQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 
@@ -1006,13 +938,13 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
 
-    VkSwapchainKHR swapChains[] = { mRenderer->mContext->mSwapchain->mSwapChain };
+    VkSwapchainKHR swapChains[] = { mSwapchain->mSwapChain };
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
 
     presentInfo.pImageIndices = &imageIndex;
 
-    result = vkQueuePresentKHR(mRenderer->mContext->presentQueue, &presentInfo);
+    result = vkQueuePresentKHR(mQueuePresent->mVkQueue, &presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
         framebufferResized = false;
@@ -1045,12 +977,10 @@ void CustomRenderer::UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<
     ubo.farPlane = aCam->farPlane;
 
     void *data;
-    vmaMapMemory(mRenderer->mContext->memoryAllocator, uniformBufferCameraMemory[currentImage], &data);
+    vmaMapMemory(mRenderContext->memoryAllocator, uniformBufferCameraMemory[currentImage], &data);
     memcpy(data, &ubo, sizeof(ubo));
-    vmaUnmapMemory(mRenderer->mContext->memoryAllocator, uniformBufferCameraMemory[currentImage]);
+    vmaUnmapMemory(mRenderContext->memoryAllocator, uniformBufferCameraMemory[currentImage]);
 }
-
-
 
 static std::vector<char> readFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);

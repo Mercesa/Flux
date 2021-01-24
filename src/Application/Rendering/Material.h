@@ -13,7 +13,7 @@ class Material
 public:
 	Material() : mTextureAsset(nullptr), mTextureVK(nullptr), mIndex(matIDIndex++) {}
 	std::shared_ptr<TextureAsset> mTextureAsset = nullptr;
-	std::shared_ptr<TextureVK> mTextureVK = nullptr;
+	std::shared_ptr < Flux::Gfx::Texture > mTextureVK = nullptr;
 
 
 	VkDescriptorSet mDescriptorSet;
