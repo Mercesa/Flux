@@ -33,6 +33,9 @@ namespace Flux
 		tTextureAsset->mWidth = static_cast<uint32_t>(tWidth);
 		tTextureAsset->mHeight = static_cast<uint32_t>(tHeight);
 		uint32_t const tDataSize = tTextureAsset->mWidth * tTextureAsset->mHeight * 4;
+
+		tTextureAsset->mMipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(tTextureAsset->mWidth, tTextureAsset->mHeight)))) + 1;
+
 		tTextureAsset->mData.resize(tDataSize);
 		tTextureAsset->mPath = aFilepath.string();
 		memcpy(tTextureAsset->mData.data(), tPixels, tDataSize);

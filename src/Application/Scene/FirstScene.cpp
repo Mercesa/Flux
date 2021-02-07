@@ -8,6 +8,7 @@
 #include "Common/AssetProcessing/ModelReaderAssimp.h"
 #include "Common/AssetProcessing/AssetManager.h"
 #include "iSceneObject.h"
+#include "Application/Rendering/RenderDataStructs.h"
 
 Flux::FirstScene::FirstScene(std::shared_ptr<Input> aInput) :
 	iScene(
@@ -20,6 +21,8 @@ Flux::FirstScene::~FirstScene()
 {
 }
 
+const std::string cPathCheckerboardTexture = std::string("Resources/Textures/checkerboard.jpg");
+
 void Flux::FirstScene::Init()
 {
 	mCamera->MouseSensitivity = 1.0f;
@@ -27,7 +30,7 @@ void Flux::FirstScene::Init()
 
 	std::shared_ptr<ModelReaderAssimp> tLoader = std::make_shared<ModelReaderAssimp>();
 
-	auto tAsset = tLoader->LoadModel("Resources\\Models\\Sponza\\sponza.obj");
+	auto tAsset = tLoader->LoadModel("Resources\\Models\\Gallery\\gallery.obj");
 
 	for (auto& mesh : tAsset->mMeshes)
 	{
@@ -37,26 +40,129 @@ void Flux::FirstScene::Init()
 
 		if (tSceneObject->mAsset->mMaterialAsset.mTextures.size() != 0)
 		{
-			for (auto& texture : tSceneObject->mAsset->mMaterialAsset.mTextures);
-			std::filesystem::path tPath = std::filesystem::path("Resources/Models/Sponza/" + tSceneObject->mAsset->mMaterialAsset.mTextures[0].second);
-			tSceneObject->mMaterial->mTextureAsset = mAssetManager->LoadTexture(tPath);
+			for (auto& texture : tSceneObject->mAsset->mMaterialAsset.mTextures)
+			{
+				std::filesystem::path tPath = std::filesystem::path("Resources/Models/Gallery/" + texture.second);
+
+				if (texture.first == "Diffuse")
+				{
+					tSceneObject->mMaterial->mTextureAssetAlbedo = mAssetManager->LoadTexture(tPath);
+				}
+				if (texture.first == "Specular")
+				{
+					tSceneObject->mMaterial->mTextureAssetSpecular = mAssetManager->LoadTexture(tPath);
+				}
+				if (texture.first == "Height")
+				{
+					tSceneObject->mMaterial->mTextureAssetNormal = mAssetManager->LoadTexture(tPath);
+				}
+			}
 		}
 
-		if(!tSceneObject->mMaterial->mTextureAsset)
+		if(!tSceneObject->mMaterial->mTextureAssetAlbedo)
 		{
-			std::filesystem::path tPath = std::filesystem::path("Resources/Textures/checkerboard.jpg");
-			tSceneObject->mMaterial->mTextureAsset = mAssetManager->LoadTexture(tPath);
+			std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
+			tSceneObject->mMaterial->mTextureAssetAlbedo = mAssetManager->LoadTexture(tPath);
+		}
+
+		if (!tSceneObject->mMaterial->mTextureAssetSpecular)
+		{
+			std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
+			tSceneObject->mMaterial->mTextureAssetSpecular = mAssetManager->LoadTexture(tPath);
+		}
+
+		if (!tSceneObject->mMaterial->mTextureAssetNormal)
+		{
+			std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
+			tSceneObject->mMaterial->mTextureAssetNormal = mAssetManager->LoadTexture(tPath);
 		}
 
 		tSceneObject->mRenderState.shaders.push_back({ ShaderTypes::eVertex, 		"Resources/Shaders/basicModel.vert.spv" });
 		tSceneObject->mRenderState.shaders.push_back({ ShaderTypes::eFragment, 		"Resources/Shaders/basicModel.frag.spv" });
 
-		glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(0.05f));
+		glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));
+
 		tSceneObject->transform = scaleMatrix;
 
 		this->mSceneObjects.push_back(tSceneObject);
 
 	}
+
+	auto tAssetDragon = tLoader->LoadModel("Resources\\Models\\Dragon\\dragon.obj");
+
+	for (auto& mesh : tAssetDragon->mMeshes)
+	{
+		std::shared_ptr<iSceneObject> tSceneObject = std::make_shared<iSceneObject>();
+		tSceneObject->mAsset = mesh;
+		tSceneObject->mMaterial = std::make_shared<Material>();
+
+		if (tSceneObject->mAsset->mMaterialAsset.mTextures.size() != 0)
+		{
+			for (auto& texture : tSceneObject->mAsset->mMaterialAsset.mTextures)
+			{
+				std::filesystem::path tPath = std::filesystem::path("Resources/Models/Dragon/" + texture.second);
+
+				if (texture.first == "Diffuse")
+				{
+					tSceneObject->mMaterial->mTextureAssetAlbedo = mAssetManager->LoadTexture(tPath);
+				}
+				if (texture.first == "Specular")
+				{
+					tSceneObject->mMaterial->mTextureAssetSpecular = mAssetManager->LoadTexture(tPath);
+				}
+				if (texture.first == "Height")
+				{
+					tSceneObject->mMaterial->mTextureAssetNormal = mAssetManager->LoadTexture(tPath);
+				}
+			}
+		}
+
+		if (!tSceneObject->mMaterial->mTextureAssetAlbedo)
+		{
+			std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
+			tSceneObject->mMaterial->mTextureAssetAlbedo = mAssetManager->LoadTexture(tPath);
+		}
+
+		if (!tSceneObject->mMaterial->mTextureAssetSpecular)
+		{
+			std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
+			tSceneObject->mMaterial->mTextureAssetSpecular = mAssetManager->LoadTexture(tPath);
+		}
+
+		if (!tSceneObject->mMaterial->mTextureAssetNormal)
+		{
+			std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
+			tSceneObject->mMaterial->mTextureAssetNormal = mAssetManager->LoadTexture(tPath);
+		}
+
+		tSceneObject->mRenderState.shaders.push_back({ ShaderTypes::eVertex, 		"Resources/Shaders/basicModel.vert.spv" });
+		tSceneObject->mRenderState.shaders.push_back({ ShaderTypes::eFragment, 		"Resources/Shaders/basicModel.frag.spv" });
+
+		glm::mat4 scaleMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(5.0f));
+		tSceneObject->transform = scaleMatrix;
+
+		this->mSceneObjects.push_back(tSceneObject);
+
+	}
+
+	for (uint32_t y = 0; y < 1; ++y)
+	{
+		for (uint32_t x = 0; x < 3; ++x)
+		{
+			for (uint32_t z = 0; z < 1; ++z)
+			{
+				std::shared_ptr<Light> l = std::make_shared<Light>();
+				l->constant = 1.0f;
+				l->linear = 0.22f;
+				l->quadratic = 0.2f;
+				l->position = glm::vec3(x * 20, 5.0f, 0.0f);
+				l->color = glm::vec3(1.0f - (x % 2), 1.0f - (y % 2), 1.0f - (z % 2));
+
+				this->mLights.push_back(l);
+			}
+		}
+	}
+	std::cout << this->mLights.size() << std::endl;
 }
 
 void Flux::FirstScene::Update(float aDt)
@@ -77,6 +183,11 @@ void Flux::FirstScene::Update(float aDt)
 	{
 		mCamera->ProcessKeyboard(Flux::Camera_Movement::RIGHT, aDt);
 	}
+	std::cout << mCamera->Position.y << std::endl;
+
+	static float angle = 0.0f;
+	angle += aDt * 5.0f;
+	//mLights[0]->position = glm::vec3(0.0f, 6.0f, 0.0f) + glm::vec3(5 * sinf(angle), 0.0f, 0.0f);
 
 	mCamera->ProcessMouseMovement(static_cast<float>(mInput->GetRelMousePos().x), static_cast<float>(mInput->GetRelMousePos().y), true);
 }

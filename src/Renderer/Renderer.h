@@ -38,29 +38,29 @@ namespace Flux
 	class Renderer
 	{
     public:
-		VkShaderModule CreateShaderModule(VkDevice aDevice, const std::vector<char>& code);
+		static VkShaderModule CreateShaderModule(VkDevice aDevice, const std::vector<char>& code);
 
-		VkCommandBuffer BeginSingleTimeCommands(VkDevice aDevice, VkCommandPool aCmdPool);
+		static VkCommandBuffer BeginSingleTimeCommands(VkDevice aDevice, VkCommandPool aCmdPool);
 
-		void EndSingleTimeCommands(VkDevice aDevice, VkQueue aQueue, VkCommandBuffer aCommandBuffer, VkCommandPool aCmdPool);
+		static void EndSingleTimeCommands(VkDevice aDevice, VkQueue aQueue, VkCommandBuffer aCommandBuffer, VkCommandPool aCmdPool);
 
-		void TransitionImageLayout(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+		static void TransitionImageLayout(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 
-		void CreateBuffer(VkDevice aDevice, VmaAllocator aAllocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage properties, VkBuffer& buffer, VmaAllocation& bufferMemory);
+		static void CreateBuffer(VkDevice aDevice, VmaAllocator aAllocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage properties, VkBuffer& buffer, VmaAllocation& bufferMemory);
 
         // This function quickly copies a buffer on the GPU
-        void CopyBuffer(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-            VkCommandBuffer commandBuffer = this->BeginSingleTimeCommands(aDevice, aCmdPool);
+        static void CopyBuffer(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+            VkCommandBuffer commandBuffer = BeginSingleTimeCommands(aDevice, aCmdPool);
 
             VkBufferCopy copyRegion{};
             copyRegion.size = size;
             vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-            this->EndSingleTimeCommands(aDevice, aQueue, commandBuffer, aCmdPool);
+            EndSingleTimeCommands(aDevice, aQueue, commandBuffer, aCmdPool);
         }
 
-        void CopyBufferToImage(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-            VkCommandBuffer commandBuffer = this->BeginSingleTimeCommands(aDevice, aCmdPool);
+        static void CopyBufferToImage(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
+            VkCommandBuffer commandBuffer = BeginSingleTimeCommands(aDevice, aCmdPool);
 
             VkBufferImageCopy region{};
             region.bufferOffset = 0;
@@ -88,21 +88,45 @@ namespace Flux
                 &region
             );
 
-            this->EndSingleTimeCommands(aDevice, aQueue, commandBuffer, aCmdPool);
+            EndSingleTimeCommands(aDevice, aQueue, commandBuffer, aCmdPool);
         }
 
-        std::shared_ptr<Gfx::BufferGPU> CreateAndUploadBuffer(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator, VmaMemoryUsage aBufferUsage, VkBufferUsageFlags aBufferFlags, void* aData, size_t aDataSize);
+        static std::shared_ptr<Gfx::BufferGPU> CreateAndUploadBuffer(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator, VmaMemoryUsage aBufferUsage, VkBufferUsageFlags aBufferFlags, void* aData, size_t aDataSize);
 
 
-        void CreateImage(VmaAllocator aAllocator, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage properties, VkImage& image, VmaAllocation& imageMemory);
-
-        VkImageView CreateImageView(VkDevice aDevice, VkImage image, VkFormat format, VkImageAspectFlags aspectMask);
-
-        std::shared_ptr<Texture> CreateAndUploadTexture(
+        static std::shared_ptr<Texture> CreateAndUploadTexture(std::shared_ptr<RenderContext> aContext,
             VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator,
-            uint32_t aWidth, uint32_t aHeight, uint32_t aImgSize, unsigned char* aImageData,
-            VkFormat aFormat);
+            uint32_t aWidth, uint32_t aHeight, uint32_t aImgSize, uint32_t aAmountOfMips, unsigned char* aImageData,
+            VkFormat aFormat) {
 
+            std::shared_ptr<Texture> tReturnTexture = std::make_shared<Texture>();
+
+            VkBuffer stagingBuffer;
+            VmaAllocation stagingBufferMemory;
+            CreateBuffer(aDevice, aAllocator, aImgSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer, stagingBufferMemory);
+
+
+            void* data;
+            vmaMapMemory(aAllocator, stagingBufferMemory, &data);
+            memcpy(data, aImageData, static_cast<size_t>(aImgSize));
+            vmaUnmapMemory(aAllocator, stagingBufferMemory);
+
+            CreateImage(aContext, aWidth, aHeight, aFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, tReturnTexture->mImage, tReturnTexture->mAllocation, aAmountOfMips);
+
+            TransitionImageLayout(aDevice, aQueue, aCmdPool, tReturnTexture->mImage, aFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, aAmountOfMips);
+            CopyBufferToImage(aDevice, aQueue, aCmdPool, stagingBuffer, tReturnTexture->mImage, aWidth, aHeight);
+
+
+
+            vkDestroyBuffer(aDevice, stagingBuffer, nullptr);
+            vmaFreeMemory(aAllocator, stagingBufferMemory);
+
+            generateMipmaps(aContext, aDevice, aQueue, aCmdPool, tReturnTexture->mImage, VK_FORMAT_R8G8B8A8_SRGB, aWidth, aHeight, aAmountOfMips);
+
+            tReturnTexture->mView = CreateImageView(aContext, tReturnTexture->mImage, aFormat, VK_IMAGE_ASPECT_COLOR_BIT, aAmountOfMips);
+
+            return std::move(tReturnTexture);
+        }
 
     public:
 
@@ -416,7 +440,7 @@ namespace Flux
             }
         }
 
-        static void CreateImage(std::shared_ptr<RenderContext> aContext, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage properties, VkImage& image, VmaAllocation& imageMemory)
+        static void CreateImage(std::shared_ptr<RenderContext> aContext, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage properties, VkImage& image, VmaAllocation& imageMemory, uint32_t miplevels)
         {
             VkImageCreateInfo imageInfo{};
             imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -424,7 +448,7 @@ namespace Flux
             imageInfo.extent.width = width;
             imageInfo.extent.height = height;
             imageInfo.extent.depth = 1;
-            imageInfo.mipLevels = 1;
+            imageInfo.mipLevels = miplevels;
             imageInfo.arrayLayers = 1;
             imageInfo.format = format;
             imageInfo.tiling = tiling;
@@ -439,7 +463,7 @@ namespace Flux
             vmaCreateImage(aContext->memoryAllocator, &imageInfo, &allocInfo, &image, &imageMemory, nullptr);
         }
 
-        static VkImageView CreateImageView(std::shared_ptr<RenderContext> aContext, VkImage image, VkFormat format, VkImageAspectFlags aspectMask) {
+        static VkImageView CreateImageView(std::shared_ptr<RenderContext> aContext, VkImage image, VkFormat format, VkImageAspectFlags aspectMask, uint32_t miplevels) {
             VkImageViewCreateInfo viewInfo{};
             viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             viewInfo.image = image;
@@ -447,7 +471,7 @@ namespace Flux
             viewInfo.format = format;
             viewInfo.subresourceRange.aspectMask = aspectMask;
             viewInfo.subresourceRange.baseMipLevel = 0;
-            viewInfo.subresourceRange.levelCount = 1;
+            viewInfo.subresourceRange.levelCount = miplevels;
             viewInfo.subresourceRange.baseArrayLayer = 0;
             viewInfo.subresourceRange.layerCount = 1;
 
@@ -459,6 +483,93 @@ namespace Flux
             return imageView;
         }
 
+        static void generateMipmaps(std::shared_ptr<RenderContext> aContext,
+            VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
+            // Check if image format supports linear blitting
+            VkFormatProperties formatProperties;
+            vkGetPhysicalDeviceFormatProperties(aContext->mDevice->mPhysicalDevice, imageFormat, &formatProperties);
+
+            if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
+                throw std::runtime_error("texture image format does not support linear blitting!");
+            }
+
+            VkCommandBuffer commandBuffer = BeginSingleTimeCommands(aDevice, aCmdPool);
+
+            VkImageMemoryBarrier barrier{};
+            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            barrier.image = image;
+            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            barrier.subresourceRange.baseArrayLayer = 0;
+            barrier.subresourceRange.layerCount = 1;
+            barrier.subresourceRange.levelCount = 1;
+
+            int32_t mipWidth = texWidth;
+            int32_t mipHeight = texHeight;
+
+            for (uint32_t i = 1; i < mipLevels; i++) {
+                barrier.subresourceRange.baseMipLevel = i - 1;
+                barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+                vkCmdPipelineBarrier(commandBuffer,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+                    0, nullptr,
+                    0, nullptr,
+                    1, &barrier);
+
+                VkImageBlit blit{};
+                blit.srcOffsets[0] = { 0, 0, 0 };
+                blit.srcOffsets[1] = { mipWidth, mipHeight, 1 };
+                blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                blit.srcSubresource.mipLevel = i - 1;
+                blit.srcSubresource.baseArrayLayer = 0;
+                blit.srcSubresource.layerCount = 1;
+                blit.dstOffsets[0] = { 0, 0, 0 };
+                blit.dstOffsets[1] = { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
+                blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                blit.dstSubresource.mipLevel = i;
+                blit.dstSubresource.baseArrayLayer = 0;
+                blit.dstSubresource.layerCount = 1;
+
+                vkCmdBlitImage(commandBuffer,
+                    image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    1, &blit,
+                    VK_FILTER_LINEAR);
+
+                barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+                vkCmdPipelineBarrier(commandBuffer,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+                    0, nullptr,
+                    0, nullptr,
+                    1, &barrier);
+
+                if (mipWidth > 1) mipWidth /= 2;
+                if (mipHeight > 1) mipHeight /= 2;
+            }
+
+            barrier.subresourceRange.baseMipLevel = mipLevels - 1;
+            barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+            vkCmdPipelineBarrier(commandBuffer,
+                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+                0, nullptr,
+                0, nullptr,
+                1, &barrier);
+
+            EndSingleTimeCommands(aContext->mDevice->mDevice, aQueue, commandBuffer, aCmdPool);
+        }
 
         static SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR aSurface) {
             SwapChainSupportDetails details;
@@ -551,14 +662,14 @@ namespace Flux
             tSwapChain->mImageViews.resize(tSwapChain->mImages.size());
 
             for (size_t i = 0; i < tSwapChain->mImages.size(); i++) {
-                tSwapChain->mImageViews[i] = Renderer::CreateImageView(aContext, tSwapChain->mImages[i], tSwapChain->mImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+                tSwapChain->mImageViews[i] = Renderer::CreateImageView(aContext, tSwapChain->mImages[i], tSwapChain->mImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
             }
 
             VkFormat depthFormat = FindDepthFormat(aContext);
             Renderer::CreateImage(aContext, tSwapChain->mExtent.width, tSwapChain->mExtent.height, depthFormat,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY,
-                tSwapChain->depthImage, tSwapChain->depthImageMemory);
-            tSwapChain->depthImageView = Renderer::CreateImageView(aContext, tSwapChain->depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+                tSwapChain->depthImage, tSwapChain->depthImageMemory, 1);
+            tSwapChain->depthImageView = Renderer::CreateImageView(aContext, tSwapChain->depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 
             return tSwapChain;
         }

@@ -36,11 +36,12 @@
 #include "Common/AssetProcessing/AssetObjects.h"
 
 #include "Application/Rendering/RenderingResourceManager.h"
-const int MAX_FRAMES_IN_FLIGHT = 1;
+#include "Application/Rendering/RenderDataStructs.h"
 
 
+constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+constexpr int AMOUNT_OF_SUPPORTED_LIGHTS = 1024;
 
-constexpr uint32_t AMOUNT_PREALLOCATED_OBJECTS = 0;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -73,21 +74,21 @@ namespace Flux
 			float padding;
 		};
 
-		VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
-			auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-			if (func != nullptr) {
-				return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-			}
-			else {
-				return VK_ERROR_EXTENSION_NOT_PRESENT;
-			}
-		}
-
-		struct UniformBufferDataCamera
+		struct UniformBufferLights
 		{
-
-
+			Light lights[AMOUNT_OF_SUPPORTED_LIGHTS];
 		};
+
+		struct LightData
+		{
+			std::vector<std::shared_ptr<Gfx::BufferGPU>> mUniformBuffersLights;
+			std::vector<VkDescriptorSet> mSets;
+			Light lightCache[AMOUNT_OF_SUPPORTED_LIGHTS];
+		};
+
+		LightData mLightData;
+
+
 
 		void Run() {
 			InitVulkan();
@@ -101,8 +102,6 @@ namespace Flux
 
 		VkSampler textureSampler;
 
-		std::vector<VkBuffer> uniformBufferCameraBuffer;
-		std::vector<VmaAllocation> uniformBufferCameraMemory;
 
 
 		VkRenderPass renderPass;
@@ -124,6 +123,7 @@ namespace Flux
 		std::vector<VkFence> imagesInFlight;
 		size_t currentFrame = 0;
 
+		std::vector<std::shared_ptr<Gfx::BufferGPU>> mUniformBuffersCamera;
 		std::vector<std::shared_ptr<Gfx::BufferGPU>> mSceneBuffers;
 		std::vector<std::shared_ptr<Flux::Gfx::Texture>> mSceneTextures;
 		std::vector<std::shared_ptr<VkDescriptorSet>> mSceneSets;
@@ -132,7 +132,6 @@ namespace Flux
 		std::unique_ptr<RenderingResourceManager> mResourceManager;
 
 
-		std::vector<std::shared_ptr<Gfx::BufferGPU>> mBuffers;
 
 		bool framebufferResized = false;
 
@@ -147,7 +146,6 @@ namespace Flux
 		void CleanupSwapChain();
 
 		void RecreateSwapChain();
-
 
 		void CreateRenderPass();
 
@@ -171,7 +169,7 @@ namespace Flux
 
 		void CreateSyncObjects();
 
-		void UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<Camera> aCam);
+		void UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<Camera> aCam, std::vector<std::shared_ptr<Light>> aLights);
 
 		GLFWwindow* mWindow;
 
@@ -179,7 +177,7 @@ namespace Flux
 			std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
 			if (!file.is_open()) {
-				throw std::runtime_error("failed to open file!");
+				throw std::runtime_error("failed to open file!" + filename);
 			}
 
 			size_t fileSize = (size_t)file.tellg();
@@ -192,9 +190,6 @@ namespace Flux
 
 			return buffer;
 		}
-
-
-		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 
 		public:

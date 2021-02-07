@@ -11,9 +11,15 @@ namespace Flux
 class Material
 {
 public:
-	Material() : mTextureAsset(nullptr), mTextureVK(nullptr), mIndex(matIDIndex++) {}
-	std::shared_ptr<TextureAsset> mTextureAsset = nullptr;
-	std::shared_ptr < Flux::Gfx::Texture > mTextureVK = nullptr;
+	Material() : mTextureAssetAlbedo(nullptr), mTextureAlbedo(nullptr), mIndex(matIDIndex++) {}
+
+	std::shared_ptr<TextureAsset> mTextureAssetAlbedo = nullptr;
+	std::shared_ptr<TextureAsset> mTextureAssetSpecular = nullptr;
+	std::shared_ptr<TextureAsset> mTextureAssetNormal = nullptr;
+
+	std::shared_ptr < Flux::Gfx::Texture > mTextureAlbedo = nullptr;
+	std::shared_ptr < Flux::Gfx::Texture > mTextureSpecular = nullptr;
+	std::shared_ptr < Flux::Gfx::Texture > mTextureNormal = nullptr;
 
 
 	VkDescriptorSet mDescriptorSet;

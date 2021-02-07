@@ -128,11 +128,19 @@ MaterialAsset ProcessMaterial(aiMesh* a_Mesh, const aiScene* a_Scene)
 			tMaterialAsset.mTextures.push_back(std::pair<std::string, std::string>("Specular", GetTextureLocation(material, aiTextureType_SPECULAR)));
 		}
 
-		if (DoesMaterialHaveTextures(material, aiTextureType_HEIGHT))
+		if (DoesMaterialHaveTextures(material, aiTextureType_NORMALS))
 		{
 			tMaterialAsset.mTextures.push_back(std::pair<std::string, std::string>("Height", GetTextureLocation(material, aiTextureType_HEIGHT)));
 
 		}
+
+		else if (DoesMaterialHaveTextures(material, aiTextureType_HEIGHT))
+		{
+			tMaterialAsset.mTextures.push_back(std::pair<std::string, std::string>("Height", GetTextureLocation(material, aiTextureType_HEIGHT)));
+
+		}
+
+
 		return tMaterialAsset;
 	}
 

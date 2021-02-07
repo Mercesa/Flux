@@ -59,6 +59,9 @@
       <Filter>src\Rendering</Filter>
     </ClInclude>
     <ClInclude Include="Context.h" />
+    <ClInclude Include="..\..\src\Application\Rendering\RenderDataStructs.h">
+      <Filter>src\Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Application\Input.cpp">

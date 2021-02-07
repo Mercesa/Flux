@@ -62,10 +62,10 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
 
     uint32_t emptyData[1];
     emptyData[0] = 0xFF000000;
-    mEmptyTexture =  mRenderer->CreateAndUploadTexture(
+    mEmptyTexture =  mRenderer->CreateAndUploadTexture(mRenderContext,
         mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
         1, 1,
-        sizeof(uint32_t),
+        sizeof(uint32_t), 1,
         reinterpret_cast<unsigned char*>(emptyData), VK_FORMAT_R8G8B8A8_UNORM);
 }
 
@@ -113,6 +113,12 @@ void CustomRenderer::Cleanup() {
         vmaFreeMemory(mRenderContext->memoryAllocator, buffer->mAllocation);
     }
 
+    for (auto& buffer : mLightData.mUniformBuffersLights)
+    {
+        vkDestroyBuffer(mRenderContext->mDevice->mDevice, buffer->mBuffer, nullptr);
+        vmaFreeMemory(mRenderContext->memoryAllocator, buffer->mAllocation);
+    }
+
     for (auto& texture : mSceneTextures)
     {
         vkDestroyImageView(mRenderContext->mDevice->mDevice, texture->mView, nullptr);
@@ -127,8 +133,8 @@ void CustomRenderer::Cleanup() {
     }
 
     for (size_t i = 0; i < mSwapchain->mImages.size(); i++) {
-        vkDestroyBuffer(mRenderContext->mDevice->mDevice, uniformBufferCameraBuffer[i], nullptr);
-        vmaFreeMemory(this->mRenderContext->memoryAllocator, uniformBufferCameraMemory[i]);
+        vkDestroyBuffer(mRenderContext->mDevice->mDevice, mUniformBuffersCamera[i]->mBuffer, nullptr);
+        vmaFreeMemory(this->mRenderContext->memoryAllocator, mUniformBuffersCamera[i]->mAllocation);
     }
 
 
@@ -492,8 +498,15 @@ void CustomRenderer::CreateDescriptorSetLayout()
         uboLayoutBindingCamera.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         uboLayoutBindingCamera.pImmutableSamplers = nullptr;
 
+        VkDescriptorSetLayoutBinding uboLayoutBindingLight{};
+        uboLayoutBindingLight.binding = 1;
+        uboLayoutBindingLight.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBindingLight.descriptorCount = 1;
+        uboLayoutBindingLight.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        uboLayoutBindingLight.pImmutableSamplers = nullptr;
 
-        std::array<VkDescriptorSetLayoutBinding, 1> bindings = { uboLayoutBindingCamera };
+
+        std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBindingCamera, uboLayoutBindingLight };
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -603,7 +616,7 @@ void CustomRenderer::CreateTextureSampler()
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     samplerInfo.mipLodBias = 0.0f;
     samplerInfo.minLod = 0.0f;
-    samplerInfo.maxLod = 0.0f;
+    samplerInfo.maxLod = 6.0f;
 
     if (vkCreateSampler(mRenderContext->mDevice->mDevice, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
@@ -612,15 +625,22 @@ void CustomRenderer::CreateTextureSampler()
 
 void CustomRenderer::CreateUniformBuffers()
 {
-    uniformBufferCameraBuffer.resize(mSwapchain->mImages.size());
-    uniformBufferCameraMemory.resize(mSwapchain->mImages.size());
+    mUniformBuffersCamera.resize(mSwapchain->mImages.size());
+    mLightData.mUniformBuffersLights.resize(mSwapchain->mImages.size());
 
     for (size_t i = 0; i < mSwapchain->mImages.size(); i++)
     {
-        mRenderer->CreateBuffer(mRenderContext->mDevice->mDevice, mRenderContext->memoryAllocator, sizeof(UniformBufferCamera), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, uniformBufferCameraBuffer[i], uniformBufferCameraMemory[i]);
+        {
+            mUniformBuffersCamera[i] = std::make_shared<BufferGPU>();
+            mRenderer->CreateBuffer(mRenderContext->mDevice->mDevice, mRenderContext->memoryAllocator, sizeof(UniformBufferCamera), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, mUniformBuffersCamera[i]->mBuffer, mUniformBuffersCamera[i]->mAllocation);
+        }
+
+        {
+            mLightData.mUniformBuffersLights[i] = std::make_shared<BufferGPU>();
+            mRenderer->CreateBuffer(mRenderContext->mDevice->mDevice, mRenderContext->memoryAllocator, sizeof(UniformBufferLights) * AMOUNT_OF_SUPPORTED_LIGHTS, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, mLightData.mUniformBuffersLights[i]->mBuffer, mLightData.mUniformBuffersLights[i]->mAllocation);
+        }
     }
 }
-
 
 void CustomRenderer::CreateDescriptorSets()
 {
@@ -640,11 +660,20 @@ void CustomRenderer::CreateDescriptorSets()
     for (size_t i = 0; i < mSwapchain->mImages.size(); i++)
     {
         VkDescriptorBufferInfo bufferInfoCamera{};
-        bufferInfoCamera.buffer = uniformBufferCameraBuffer[i];
+        bufferInfoCamera.buffer = mUniformBuffersCamera[i]->mBuffer;
         bufferInfoCamera.offset = 0;
         bufferInfoCamera.range = sizeof(CustomRenderer::UniformBufferCamera);
 
-        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+
+        VkDescriptorBufferInfo bufferInfoLight;
+
+
+		bufferInfoLight.buffer = mLightData.mUniformBuffersLights[i]->mBuffer;
+		bufferInfoLight.offset = 0;
+		bufferInfoLight.range = sizeof(Light) * AMOUNT_OF_SUPPORTED_LIGHTS;
+
+
+        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[0].dstSet = descriptorSetsSceneObjects[i];
@@ -653,6 +682,15 @@ void CustomRenderer::CreateDescriptorSets()
         descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         descriptorWrites[0].descriptorCount = 1;
         descriptorWrites[0].pBufferInfo = &bufferInfoCamera;
+
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = descriptorSetsSceneObjects[i];
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pBufferInfo = &bufferInfoLight;
+
 
 
         vkUpdateDescriptorSets(mRenderContext->mDevice->mDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
@@ -722,25 +760,69 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
             mSceneBuffers.push_back(object->mMesh->mIndexBuffer);
         }
 
-        if (object->mMaterial->mTextureAsset != nullptr && object->mMaterial->mTextureVK == nullptr)
+        if (object->mMaterial->mTextureAssetAlbedo != nullptr && object->mMaterial->mTextureAlbedo == nullptr)
         {
-            const auto& tAsset = object->mMaterial->mTextureAsset;
+            {
+                const auto& tAssetAlbedo = object->mMaterial->mTextureAssetAlbedo;
 
-            auto queryResultTexture = mResourceManager->QueryTextureAssetRegistered(tAsset);
-            if (!queryResultTexture.has_value())
-            {
-                object->mMaterial->mTextureVK = mRenderer->CreateAndUploadTexture(
-                    mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
-                    tAsset->mWidth, tAsset->mHeight,
-                    tAsset->mData.size(),
-                    tAsset->mData.data(), VK_FORMAT_R8G8B8A8_UNORM);
-                mSceneTextures.push_back(object->mMaterial->mTextureVK);
-                mResourceManager->RegisterTextureData({ tAsset, object->mMaterial->mTextureVK });
+                auto queryResultTextureAlbedo = mResourceManager->QueryTextureAssetRegistered(tAssetAlbedo);
+                if (!queryResultTextureAlbedo.has_value())
+                {
+                    object->mMaterial->mTextureAlbedo = mRenderer->CreateAndUploadTexture(mRenderContext,
+                        mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
+                        tAssetAlbedo->mWidth, tAssetAlbedo->mHeight,
+                        tAssetAlbedo->mData.size(), tAssetAlbedo->mMipLevels,
+                        tAssetAlbedo->mData.data(), VK_FORMAT_R8G8B8A8_SRGB);
+                    mSceneTextures.push_back(object->mMaterial->mTextureAlbedo);
+                    mResourceManager->RegisterTextureData({ tAssetAlbedo, object->mMaterial->mTextureAlbedo });
+                }
+                else
+                {
+                    object->mMaterial->mTextureAlbedo = queryResultTextureAlbedo.value();
+                }
             }
-            else
+
+
             {
-                object->mMaterial->mTextureVK = queryResultTexture.value();
+                const auto& tAssetNormal = object->mMaterial->mTextureAssetNormal;
+
+                auto queryResultTextureNormal = mResourceManager->QueryTextureAssetRegistered(tAssetNormal);
+                if (!queryResultTextureNormal.has_value())
+                {
+                    object->mMaterial->mTextureNormal = mRenderer->CreateAndUploadTexture(mRenderContext,
+                        mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
+                        tAssetNormal->mWidth, tAssetNormal->mHeight,
+                        tAssetNormal->mData.size(), tAssetNormal->mMipLevels,
+                        tAssetNormal->mData.data(), VK_FORMAT_R8G8B8A8_UNORM);
+                    mSceneTextures.push_back(object->mMaterial->mTextureNormal);
+                    mResourceManager->RegisterTextureData({ tAssetNormal, object->mMaterial->mTextureNormal });
+                }
+                else
+                {
+                    object->mMaterial->mTextureNormal = queryResultTextureNormal.value();
+                }
             }
+
+            {
+                const auto& tAssetSpecular = object->mMaterial->mTextureAssetSpecular;
+
+                auto queryResultTextureSpec = mResourceManager->QueryTextureAssetRegistered(tAssetSpecular);
+                if (!queryResultTextureSpec.has_value())
+                {
+                    object->mMaterial->mTextureSpecular = mRenderer->CreateAndUploadTexture(mRenderContext,
+                        mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
+                        tAssetSpecular->mWidth, tAssetSpecular->mHeight,
+                        tAssetSpecular->mData.size(), tAssetSpecular->mMipLevels,
+                        tAssetSpecular->mData.data(), VK_FORMAT_R8G8B8A8_UNORM);
+                    mSceneTextures.push_back(object->mMaterial->mTextureSpecular);
+                    mResourceManager->RegisterTextureData({ tAssetSpecular, object->mMaterial->mTextureSpecular });
+                }
+                else
+                {
+                    object->mMaterial->mTextureSpecular = queryResultTextureSpec.value();
+                }
+            }
+
 
             auto queryResultMaterial = mResourceManager->QueryMaterialAssetRegistered(object->mMaterial);
             if (!queryResultMaterial)
@@ -760,8 +842,16 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
 
 				VkDescriptorImageInfo albedoImage{};
-                albedoImage.imageView = object->mMaterial->mTextureVK->mView;
+                albedoImage.imageView = object->mMaterial->mTextureAlbedo->mView;
                 albedoImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+                VkDescriptorImageInfo specularImage{};
+                specularImage.imageView = object->mMaterial->mTextureSpecular->mView;
+                specularImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+                VkDescriptorImageInfo normalImage{};
+                normalImage.imageView = object->mMaterial->mTextureNormal->mView;
+                normalImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
                 VkDescriptorImageInfo emptyImage{};
                 emptyImage.imageView = mEmptyTexture->mView;
@@ -787,7 +877,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
                 descriptorWrites[1].dstArrayElement = 0;
                 descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
                 descriptorWrites[1].descriptorCount = 1;
-                descriptorWrites[1].pImageInfo = &albedoImage;
+                descriptorWrites[1].pImageInfo = &specularImage;
 
                 descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 descriptorWrites[2].dstSet = mSet[0];
@@ -795,7 +885,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
                 descriptorWrites[2].dstArrayElement = 0;
                 descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
                 descriptorWrites[2].descriptorCount = 1;
-                descriptorWrites[2].pImageInfo = &albedoImage;
+                descriptorWrites[2].pImageInfo = &normalImage;
 
 				descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				descriptorWrites[3].dstSet = mSet[0];
@@ -843,7 +933,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
     }
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
-    UpdateUniformBuffer(imageIndex, aScene->GetCamera());
+    UpdateUniformBuffer(imageIndex, aScene->GetCamera(), aScene->GetLights());
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -962,7 +1052,7 @@ void Flux::CustomRenderer::SetWindow(GLFWwindow* aWindow)
     mWindow = aWindow;
 }
 
-void CustomRenderer::UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<Camera> aCam) {
+void CustomRenderer::UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<Camera> aCam, std::vector<std::shared_ptr<Light>> aLights) {
     static auto startTime = std::chrono::high_resolution_clock::now();
 
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -977,27 +1067,37 @@ void CustomRenderer::UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<
     ubo.farPlane = aCam->farPlane;
 
     void *data;
-    vmaMapMemory(mRenderContext->memoryAllocator, uniformBufferCameraMemory[currentImage], &data);
+    vmaMapMemory(mRenderContext->memoryAllocator, mUniformBuffersCamera[currentImage]->mAllocation, &data);
     memcpy(data, &ubo, sizeof(ubo));
-    vmaUnmapMemory(mRenderContext->memoryAllocator, uniformBufferCameraMemory[currentImage]);
-}
+    vmaUnmapMemory(mRenderContext->memoryAllocator, mUniformBuffersCamera[currentImage]->mAllocation);
 
-static std::vector<char> readFile(const std::string& filename) {
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
-    if (!file.is_open()) {
-        throw std::runtime_error("failed to open file!");
+
+    // We need to do this to make sure if any lights are deleted we clean the array, though better to have a dirty flag or something like that
+    for (uint32_t lIndex = 0; lIndex < AMOUNT_OF_SUPPORTED_LIGHTS; ++lIndex)
+    {
+        mLightData.lightCache[lIndex] = Light();
     }
 
-    size_t fileSize = (size_t)file.tellg();
-    std::vector<char> buffer(fileSize);
+    if (aLights.size() == 0)
+    {
+        mLightData.lightCache[0].amountOfLights = 0;
+    }
 
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
+    if (aLights.size() >= AMOUNT_OF_SUPPORTED_LIGHTS)
+    {
+        std::cout << "Max amount of lights exceeded, won't update light array";
+    }
 
-    file.close();
+    for (uint32_t lIndex = 0; lIndex < aLights.size(); ++lIndex)
+    {
+        mLightData.lightCache[lIndex] = (*aLights[lIndex]);
+    }
 
-    return buffer;
+    void* lightData;
+    vmaMapMemory(mRenderContext->memoryAllocator, mLightData.mUniformBuffersLights[currentImage]->mAllocation, &lightData);
+    memcpy(lightData, mLightData.lightCache, sizeof(Light) * AMOUNT_OF_SUPPORTED_LIGHTS);
+    vmaUnmapMemory(mRenderContext->memoryAllocator, mLightData.mUniformBuffersLights[currentImage]->mAllocation);
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {

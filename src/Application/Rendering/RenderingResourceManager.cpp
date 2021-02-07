@@ -45,13 +45,13 @@ std::optional<std::shared_ptr<Flux::Material>> Flux::RenderingResourceManager::Q
 	assert(aMaterial);
 
 	// Material needs to be associated with a textureVK struct or a texture asset
-	if (!aMaterial->mTextureVK || !aMaterial->mTextureAsset)
+	if (!aMaterial->mTextureAlbedo || !aMaterial->mTextureAssetAlbedo)
 	{
 		return std::optional<std::shared_ptr<Flux::Material>>();
 	}
 
 	// If asset is not registered yet, return nothing
-	if (!QueryTextureAssetRegistered(aMaterial->mTextureAsset))
+	if (!QueryTextureAssetRegistered(aMaterial->mTextureAssetAlbedo))
 	{
 		return std::optional<std::shared_ptr<Flux::Material>>();
 	}
@@ -59,7 +59,7 @@ std::optional<std::shared_ptr<Flux::Material>> Flux::RenderingResourceManager::Q
 	for (auto& material : mMaterials)
 	{
 		// TODO: just now check the path, in the future check several paths
-		if ((aMaterial->mTextureAsset->mPath == material->mTextureAsset->mPath))
+		if ((aMaterial->mTextureAssetAlbedo->mPath == material->mTextureAssetAlbedo->mPath))
 		{
 			return std::optional<std::shared_ptr<Flux::Material>>(material);
 		}

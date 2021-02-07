@@ -14,7 +14,7 @@ layout(push_constant) uniform PushConsts {
 layout(location = 0) out vec2 outTexCoord;
 layout(location = 1) out vec3 outNormal;
 layout(location = 2) out vec3 fragPos;
-
+layout(location = 3) out mat3 TBN;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 texCoord;
@@ -28,4 +28,10 @@ void main() {
     gl_Position = camera.proj * camera.view * pushConsts.model * vec4(inPosition, 1.0);
     outTexCoord = texCoord;
     outNormal = normal;
+
+   vec3 T = normalize(vec3(pushConsts.model * vec4(tangent,   0.0)));
+   vec3 B = normalize(vec3(pushConsts.model * vec4(bitangent, 0.0)));
+   vec3 N = normalize(vec3(pushConsts.model * vec4(normal,    0.0)));
+
+   TBN = mat3(T, B, N);
 }

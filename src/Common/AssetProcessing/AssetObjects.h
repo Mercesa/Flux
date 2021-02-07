@@ -22,6 +22,7 @@ namespace Flux
 		std::vector<unsigned char> mData;
 		uint32_t mWidth;
 		uint32_t mHeight;
+		uint32_t mMipLevels;
 		std::string mPath;
 	};
 
