@@ -176,6 +176,7 @@
     <ClInclude Include="..\..\src\Renderer\Reflection.h" />
     <ClInclude Include="..\..\src\Renderer\RenderContext.h" />
     <ClInclude Include="..\..\src\Renderer\Renderer.h" />
+    <ClInclude Include="..\..\src\Renderer\RenderTarget.h" />
     <ClInclude Include="..\..\src\Renderer\Swapchain.h" />
     <ClInclude Include="..\..\src\Renderer\TextureVK.h" />
   </ItemGroup>

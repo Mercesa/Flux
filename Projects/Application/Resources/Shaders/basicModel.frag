@@ -39,19 +39,23 @@ void main() {
 
 
 
-        vec3 norm = normalize(outNormal);
-        norm = texture(sampler2D(textureNormal, basicSampler), outTexCoord).rgb;
-        norm = norm * 2.0 - 1.0;
-        norm = normalize(TBN * norm);
-        vec3 result = vec3(0.0);
+    vec3 norm = normalize(outNormal);
+    norm = texture(sampler2D(textureNormal, basicSampler), outTexCoord).rgb;
+    norm = norm * 2.0 - 1.0;
+    norm = normalize(TBN * norm);
+    vec3 result = vec3(0.0);
 
-        vec3 viewDir = vec3(camera.position) - fragPos;
-        float viewDistance = sqrt(dot(viewDir, viewDir));
-        viewDir = normalize(viewDir);
+    vec3 viewDir = vec3(camera.position) - fragPos;
+    float viewDistance = sqrt(dot(viewDir, viewDir));
 
-        for(int a = 0; a < 3; ++a)
-        {
-        int amountOfLights = lights[0].amountOfLights;
+
+    vec3 albedo = vec3(texture(sampler2D(textureAlbedo, basicSampler), outTexCoord));
+
+    viewDir = normalize(viewDir);
+
+    int amountOfLights = lights[0].amountOfLights;
+    for(int a = 0; a < amountOfLights; ++a)
+    {
 
         // diffuse
         vec3 lightVec = lights[a].position - fragPos;
@@ -67,8 +71,8 @@ void main() {
 
         float lightVecLength = length(lightVec);
         float attenuation = 1.0/(lights[a].constantFactor + lights[a].linearFactor * lightVecLength + lights[a].quadraticFactor * (lightVecLength * lightVecLength));
-        result += (attenuation + diffuse * attenuation + specular * attenuation) * vec3(texture(sampler2D(textureAlbedo, basicSampler), outTexCoord));
-        }
+        result += (attenuation + diffuse * attenuation + specular * attenuation) * albedo;
+    }
 
     vec3 color = applyFog(result, viewDistance, 0.005);
 

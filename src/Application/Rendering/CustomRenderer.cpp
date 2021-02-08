@@ -1079,20 +1079,18 @@ void CustomRenderer::UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<
         mLightData.lightCache[lIndex] = Light();
     }
 
-    if (aLights.size() == 0)
-    {
-        mLightData.lightCache[0].amountOfLights = 0;
-    }
-
     if (aLights.size() >= AMOUNT_OF_SUPPORTED_LIGHTS)
     {
         std::cout << "Max amount of lights exceeded, won't update light array";
+        return;
     }
 
     for (uint32_t lIndex = 0; lIndex < aLights.size(); ++lIndex)
     {
         mLightData.lightCache[lIndex] = (*aLights[lIndex]);
     }
+    mLightData.lightCache[0].amountOfLights = aLights.size();
+
 
     void* lightData;
     vmaMapMemory(mRenderContext->memoryAllocator, mLightData.mUniformBuffersLights[currentImage]->mAllocation, &lightData);

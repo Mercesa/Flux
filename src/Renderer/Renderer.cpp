@@ -143,3 +143,4 @@ std::shared_ptr<Gfx::BufferGPU> Renderer::CreateAndUploadBuffer(VkDevice aDevice
 
 	return std::move(tReturnBuffer);
 }
+

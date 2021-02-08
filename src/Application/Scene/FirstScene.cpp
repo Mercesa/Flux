@@ -145,24 +145,23 @@ void Flux::FirstScene::Init()
 
 	}
 
-	for (uint32_t y = 0; y < 1; ++y)
+	for (uint32_t y = 0; y < 3; ++y)
 	{
 		for (uint32_t x = 0; x < 3; ++x)
 		{
-			for (uint32_t z = 0; z < 1; ++z)
+			for (uint32_t z = 0; z < 3; ++z)
 			{
 				std::shared_ptr<Light> l = std::make_shared<Light>();
 				l->constant = 1.0f;
 				l->linear = 0.22f;
 				l->quadratic = 0.2f;
-				l->position = glm::vec3(x * 20, 5.0f, 0.0f);
+				l->position = glm::vec3(x * 20, y * 5.0f, z * 5.0f);
 				l->color = glm::vec3(1.0f - (x % 2), 1.0f - (y % 2), 1.0f - (z % 2));
 
 				this->mLights.push_back(l);
 			}
 		}
 	}
-	std::cout << this->mLights.size() << std::endl;
 }
 
 void Flux::FirstScene::Update(float aDt)
@@ -183,7 +182,6 @@ void Flux::FirstScene::Update(float aDt)
 	{
 		mCamera->ProcessKeyboard(Flux::Camera_Movement::RIGHT, aDt);
 	}
-	std::cout << mCamera->Position.y << std::endl;
 
 	static float angle = 0.0f;
 	angle += aDt * 5.0f;

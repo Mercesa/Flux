@@ -102,8 +102,6 @@ namespace Flux
 
 		VkSampler textureSampler;
 
-
-
 		VkRenderPass renderPass;
 		VkDescriptorSetLayout descriptorSetLayout;
 
@@ -126,6 +124,8 @@ namespace Flux
 		std::vector<std::shared_ptr<Gfx::BufferGPU>> mUniformBuffersCamera;
 		std::vector<std::shared_ptr<Gfx::BufferGPU>> mSceneBuffers;
 		std::vector<std::shared_ptr<Flux::Gfx::Texture>> mSceneTextures;
+
+
 		std::vector<std::shared_ptr<VkDescriptorSet>> mSceneSets;
 		std::vector<std::pair<RenderState, VkPipeline>> mPipelines;
 

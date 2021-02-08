@@ -55,5 +55,8 @@
     <ClInclude Include="..\..\src\Renderer\DescriptorPool.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\Renderer\RenderTarget.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
