@@ -7,6 +7,7 @@
 #include "Renderer/Swapchain.h"
 #include "Common/AssetProcessing/ModelReaderAssimp.h"
 
+#include "Common/FileHandling/FileReadUtility.h"
 
 #include <stb_image.h>
 
@@ -307,7 +308,7 @@ VkPipeline Flux::CustomRenderer::CreateGraphicsPipelineForState(RenderState stat
     // Prepare the pipeline stages
     for (auto& e : state.shaders)
     {
-        auto shaderCode = readFile(e.second);
+        auto shaderCode =  Common::ReadFile(e.second);
 
         VkShaderModule shaderModule = mRenderer->CreateShaderModule(mRenderContext->mDevice->mDevice, shaderCode);
 
