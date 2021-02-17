@@ -200,6 +200,7 @@ namespace Flux
 		std::shared_ptr<Flux::Gfx::Queue> mQueuePresent;
 		std::shared_ptr<Flux::Gfx::DescriptorPool> mDescriptorPool;
 
+		std::shared_ptr<Flux::Gfx::RenderTarget> mRenderTargetFinal;
 
 	};
 

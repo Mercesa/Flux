@@ -9,6 +9,7 @@
 
 
 #include <stb_image.h>
+
 using namespace Flux;
 using namespace Flux::Gfx;
 
@@ -60,6 +61,14 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
     CreateSyncObjects();
 
 
+
+    Flux::Gfx::RenderTargetCreateDesc RTCreateDesc{};
+    RTCreateDesc.mWidth = mSwapchain->mExtent.width;
+    RTCreateDesc.mHeight = mSwapchain->mExtent.height;
+    RTCreateDesc.mTargets = { {VK_FORMAT_R8G8B8A8_UNORM} };
+    RTCreateDesc.mDepthTarget = { VK_FORMAT_D32_SFLOAT };
+    mRenderTargetFinal = Renderer::CreateRenderTarget(mRenderContext, mRenderContext->mDevice, mQueueGraphics, commandPool, mRenderContext->memoryAllocator, &RTCreateDesc);
+
     uint32_t emptyData[1];
     emptyData[0] = 0xFF000000;
     mEmptyTexture =  mRenderer->CreateAndUploadTexture(mRenderContext,
@@ -92,7 +101,7 @@ void CustomRenderer::CustomRenderer::CleanupSwapChain() {
     Renderer::DestroySwapchain(mRenderContext, mSwapchain);
 
     vkFreeDescriptorSets(mRenderContext->mDevice->mDevice, mDescriptorPool->mPool, descriptorSetsSceneObjects.size(), descriptorSetsSceneObjects.data());
-
+    Renderer::DestroyRenderTarget(mRenderContext, mRenderTargetFinal);
 }
 
 void CustomRenderer::Cleanup() {
@@ -162,6 +171,14 @@ void CustomRenderer::RecreateSwapChain() {
     CleanupSwapChain();
 
     mSwapchain = Renderer::CreateSwapChain(mRenderContext, mWindow);
+
+
+    Flux::Gfx::RenderTargetCreateDesc RTCreateDesc{};
+    RTCreateDesc.mWidth = mSwapchain->mExtent.width;
+    RTCreateDesc.mHeight = mSwapchain->mExtent.height;
+    RTCreateDesc.mTargets = { {VK_FORMAT_R8G8B8A8_UNORM} };
+    RTCreateDesc.mDepthTarget = { VK_FORMAT_D32_SFLOAT };
+    mRenderTargetFinal = Renderer::CreateRenderTarget(mRenderContext, mRenderContext->mDevice, mQueueGraphics, commandPool, mRenderContext->memoryAllocator, &RTCreateDesc);
 
     CreateRenderPass();
     CreateFramebuffers();
@@ -444,7 +461,7 @@ VkPipeline Flux::CustomRenderer::CreateGraphicsPipelineForState(RenderState stat
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.layout = pipelineLayoutSceneObjects;
-    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.renderPass = mRenderTargetFinal->mPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
@@ -945,8 +962,8 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = mSwapchain->mFramebuffers[imageIndex];
+    renderPassInfo.renderPass = mRenderTargetFinal->mPass;
+    renderPassInfo.framebuffer = mRenderTargetFinal->mFramebuffer;
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = mSwapchain->mExtent;
 
@@ -996,6 +1013,36 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
     }
 
     vkCmdEndRenderPass(commandBuffers[imageIndex]);
+
+    VkImageCopy copy{};
+
+    copy.srcOffset = { 0, 0, 0 };
+    copy.srcSubresource.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+    copy.srcSubresource.mipLevel = 0;
+    copy.srcSubresource.layerCount = 1;
+    copy.srcSubresource.baseArrayLayer = 0;
+
+    copy.dstOffset = { 0, 0, 0 };
+    copy.extent.depth = 1;
+    copy.extent.width = mSwapchain->mExtent.width;
+    copy.extent.height = mSwapchain->mExtent.height;
+
+    copy.dstSubresource.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+    copy.dstSubresource.mipLevel = 0;
+    copy.dstSubresource.layerCount = 1;
+    copy.dstSubresource.baseArrayLayer = 0;
+
+    Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mSwapchain->mImages[imageIndex], mSwapchain->mImageFormat, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, commandBuffers[imageIndex]);
+
+    Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderTargetFinal->mColorImages[0]->mImage, mSwapchain->mImageFormat, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, commandBuffers[imageIndex]);
+
+    vkCmdCopyImage(commandBuffers[imageIndex], mRenderTargetFinal->mColorImages[0]->mImage, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, mSwapchain->mImages[imageIndex], VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+
+    // Transition swapchain to present
+    Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mSwapchain->mImages[imageIndex], mSwapchain->mImageFormat, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 1, commandBuffers[imageIndex]);
+
+    // Transition fullscreen rt to color attachment optimal
+    Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderTargetFinal->mColorImages[0]->mImage, mSwapchain->mImageFormat, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, commandBuffers[imageIndex]);
 
     if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
@@ -1089,6 +1136,7 @@ void CustomRenderer::UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<
     {
         mLightData.lightCache[lIndex] = (*aLights[lIndex]);
     }
+
     mLightData.lightCache[0].amountOfLights = aLights.size();
 
 

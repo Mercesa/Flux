@@ -30,7 +30,7 @@ void Flux::FirstScene::Init()
 
 	std::shared_ptr<ModelReaderAssimp> tLoader = std::make_shared<ModelReaderAssimp>();
 
-	auto tAsset = tLoader->LoadModel("Resources\\Models\\Gallery\\gallery.obj");
+	auto tAsset = tLoader->LoadModel("Resources\\Models\\Sponza\\sponza.obj");
 
 	for (auto& mesh : tAsset->mMeshes)
 	{
@@ -42,7 +42,7 @@ void Flux::FirstScene::Init()
 		{
 			for (auto& texture : tSceneObject->mAsset->mMaterialAsset.mTextures)
 			{
-				std::filesystem::path tPath = std::filesystem::path("Resources/Models/Gallery/" + texture.second);
+				std::filesystem::path tPath = std::filesystem::path("Resources/Models/Sponza/" + texture.second);
 
 				if (texture.first == "Diffuse")
 				{
@@ -80,7 +80,7 @@ void Flux::FirstScene::Init()
 		tSceneObject->mRenderState.shaders.push_back({ ShaderTypes::eVertex, 		"Resources/Shaders/basicModel.vert.spv" });
 		tSceneObject->mRenderState.shaders.push_back({ ShaderTypes::eFragment, 		"Resources/Shaders/basicModel.frag.spv" });
 
-		glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));
+		glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(0.01f));
 
 		tSceneObject->transform = scaleMatrix;
 

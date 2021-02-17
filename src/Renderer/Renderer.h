@@ -47,6 +47,8 @@ namespace Flux
 
 			static void TransitionImageLayout(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 
+			static void TransitionImageLayout(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, VkCommandBuffer aBuffer);
+
 			static void CreateBuffer(VkDevice aDevice, VmaAllocator aAllocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage properties, VkBuffer& buffer, VmaAllocation& bufferMemory);
 
 			// This function quickly copies a buffer on the GPU
@@ -95,22 +97,22 @@ namespace Flux
 			static std::shared_ptr<Gfx::BufferGPU> CreateAndUploadBuffer(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator, VmaMemoryUsage aBufferUsage, VkBufferUsageFlags aBufferFlags, void* aData, size_t aDataSize);
 
 
-			//static std::shared_ptr<Texture> CreateTexture(std::shared_ptr<RenderContext> aContext,
-			//	VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator,
-			//	uint32_t aWidth, uint32_t aHeight, uint32_t aAmountOfMips,
-			//	VkFormat aFormat, VkImageLayout aFinalLayout)
-			//{
-			//	std::shared_ptr<Texture> tReturnTexture = std::make_shared<Texture>();
+			static std::shared_ptr<Texture> CreateTexture(std::shared_ptr<RenderContext> aContext,
+				VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator,
+				uint32_t aWidth, uint32_t aHeight, uint32_t aAmountOfMips,
+				VkFormat aFormat, VkImageLayout aFinalLayout, VkImageUsageFlags aUsageFlags, VkImageAspectFlags aAspect)
+			{
+				std::shared_ptr<Texture> tReturnTexture = std::make_shared<Texture>();
 
 
-			//	CreateImage(aContext, aWidth, aHeight, aFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, tReturnTexture->mImage, tReturnTexture->mAllocation, aAmountOfMips);
+				CreateImage(aContext, aWidth, aHeight, aFormat, VK_IMAGE_TILING_OPTIMAL, aUsageFlags, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, tReturnTexture->mImage, tReturnTexture->mAllocation, aAmountOfMips);
 
-			//	tReturnTexture->mView = CreateImageView(aContext, tReturnTexture->mImage, aFormat, VK_IMAGE_ASPECT_COLOR_BIT, aAmountOfMips);
+				tReturnTexture->mView = CreateImageView(aContext, tReturnTexture->mImage, aFormat, aAspect, aAmountOfMips);
 
-			//	TransitionImageLayout(aDevice, aQueue, aCmdPool, tReturnTexture->mImage, aFormat, VK_IMAGE_LAYOUT_UNDEFINED, aFinalLayout, aAmountOfMips);
+				TransitionImageLayout(aDevice, aQueue, aCmdPool, tReturnTexture->mImage, aFormat, VK_IMAGE_LAYOUT_UNDEFINED, aFinalLayout, aAmountOfMips);
 
-			//	return std::move(tReturnTexture);
-			//}
+				return std::move(tReturnTexture);
+			}
 
 			static std::shared_ptr<Texture> CreateAndUploadTexture(std::shared_ptr<RenderContext> aContext,
 				VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator,
@@ -331,8 +333,21 @@ namespace Flux
 					queueCreateInfos.push_back(queueCreateInfo);
 				}
 
-				VkPhysicalDeviceFeatures deviceFeatures{};
-				deviceFeatures.samplerAnisotropy = VK_TRUE;
+
+				VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures stencilFeatures{};
+				stencilFeatures.separateDepthStencilLayouts = VK_TRUE;
+				stencilFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES;
+				stencilFeatures.pNext = nullptr;
+
+				VkPhysicalDeviceFeatures2KHR features{};
+				features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+				features.features.samplerAnisotropy = VK_TRUE;
+				features.pNext = &stencilFeatures;
+
+
+
+
+
 
 				VkDeviceCreateInfo createInfo{};
 				createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -340,11 +355,12 @@ namespace Flux
 				createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 				createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-				createInfo.pEnabledFeatures = &deviceFeatures;
+				createInfo.pEnabledFeatures = NULL;
 
 				createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
 				createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
+				createInfo.pNext = &features;
 				if (aContext->debugMode) {
 					createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 					createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -647,7 +663,7 @@ namespace Flux
 				createInfo.imageColorSpace = surfaceFormat.colorSpace;
 				createInfo.imageExtent = extent;
 				createInfo.imageArrayLayers = 1;
-				createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+				createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 				QueueFamilyIndices indices = findQueueFamilies(aContext->mDevice->mPhysicalDevice, aContext->surface);
 				uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
@@ -886,8 +902,6 @@ namespace Flux
 					VK_IMAGE_TILING_OPTIMAL,
 					VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
 				);
-
-
 			}
 
 			static std::shared_ptr <Gfx::RenderTarget> CreateRenderTarget(
@@ -901,16 +915,168 @@ namespace Flux
 				assert(aRenderTargetDesc != nullptr);
 
 				std::vector<std::shared_ptr<Gfx::Texture>> tTextures;
+				std::shared_ptr<Gfx::Texture> tDepthTexture;
 
-				for (const auto& e : aRenderTargetDesc->mTargets)
+				// Prep colour texture
+				for (int i = 0; i < aRenderTargetDesc->mTargets.size(); ++i)
 				{
-					//tTextures.push_back(CreateTexture(aRendererContext, aDevice->mDevice, aQueue->mVkQueue, aPool, aAllocator, aRenderTargetDesc->mWidth, aRenderTargetDesc->mHeight, 0, e.format, VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+					tTextures.push_back(
+						CreateTexture(aRendererContext, aDevice->mDevice, aQueue->mVkQueue, aPool, aAllocator, aRenderTargetDesc->mWidth, aRenderTargetDesc->mHeight, 1, aRenderTargetDesc->mTargets[i].format, VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT));
+
+					tTextures[i]->mFormat = aRenderTargetDesc->mTargets[i].format;
+				}
+
+				VkFormat depthFormat = FindDepthFormat(aRendererContext);
+
+				if (aRenderTargetDesc->mDepthTarget.has_value())
+				{
+					tDepthTexture = std::make_shared<Texture>();
+					/*tTextures.push_back(
+						CreateTexture(aRendererContext, aDevice->mDevice, aQueue->mVkQueue, aPool, aAllocator, aRenderTargetDesc->mWidth, aRenderTargetDesc->mHeight, 1, aRenderTargetDesc->mDepthTarget.value().format, VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR, VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT));*/
+
+					Renderer::CreateImage(aRendererContext, aRenderTargetDesc->mWidth, aRenderTargetDesc->mHeight, depthFormat,
+						VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY,
+						tDepthTexture->mImage, tDepthTexture->mAllocation, 1);
+					tDepthTexture->mView = Renderer::CreateImageView(aRendererContext, tDepthTexture->mImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+					tDepthTexture->mFormat = depthFormat;
+				}
+
+				std::shared_ptr<RenderTarget> tRenderTarget = std::make_shared<RenderTarget>(aRenderTargetDesc->mWidth, aRenderTargetDesc->mHeight, tTextures);
+
+				tRenderTarget->mColorImages = tTextures;
+				tRenderTarget->mDepthImage = tDepthTexture;
+
+				std::vector<VkAttachmentDescription> tAttachments;
+
+				for (const auto& eColAttachment : tRenderTarget->mColorImages)
+				{
+					VkAttachmentDescription colorAttachment{};
+					colorAttachment.format = eColAttachment->mFormat;
+					colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+					colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+					colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+					colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+					colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+					colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+					colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+					tAttachments.push_back(colorAttachment);
 				}
 
 
-				// TODO finish the rest of the function
-				//std::shared_ptr<RenderTarget> tRenderTarget = std::make_shared<RenderTarget>();
+				if (tRenderTarget->mDepthImage)
+				{
+					const auto& tDepthImage = tRenderTarget->mDepthImage;
+					VkAttachmentDescription depthAttachment{};
+					depthAttachment.format = depthFormat;
+					depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+					depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+					depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+					depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+					depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+					depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+					depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+					tAttachments.push_back(depthAttachment);
+				}
 
+
+				std::vector<VkAttachmentReference> colorAttachmentRef{};
+
+				for (int i = 0; i < tRenderTarget->mColorImages.size(); ++i)
+				{
+					VkAttachmentReference ref;
+					ref.attachment = i;
+					ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+					colorAttachmentRef.push_back(ref);
+
+				}
+
+				VkSubpassDescription subpass{};
+				subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+				subpass.colorAttachmentCount = colorAttachmentRef.size();
+				subpass.pColorAttachments = colorAttachmentRef.data();
+
+				VkAttachmentReference depthAttachmentRef{};
+				if (tRenderTarget->mDepthImage)
+				{
+					depthAttachmentRef.attachment = colorAttachmentRef.size();
+					depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+					subpass.pDepthStencilAttachment = &depthAttachmentRef;
+				}
+
+				VkSubpassDependency dependency{};
+				dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+				dependency.dstSubpass = 0;
+				dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				dependency.srcAccessMask = 0;
+				dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+				VkRenderPassCreateInfo renderPassInfo{};
+				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+				renderPassInfo.attachmentCount = static_cast<uint32_t>(tAttachments.size());
+				renderPassInfo.pAttachments = tAttachments.data();
+				renderPassInfo.subpassCount = 1;
+				renderPassInfo.pSubpasses = &subpass;
+				renderPassInfo.dependencyCount = 1;
+				renderPassInfo.pDependencies = &dependency;
+
+				if (vkCreateRenderPass(aRendererContext->mDevice->mDevice, &renderPassInfo, nullptr, &tRenderTarget->mPass) != VK_SUCCESS) {
+					throw std::runtime_error("failed to create render pass!");
+				}
+
+				std::vector<VkImageView> views;
+
+				for (auto& eTextures : tRenderTarget->mColorImages)
+				{
+					views.push_back(eTextures->mView);
+				}
+
+				if (tRenderTarget->mDepthImage)
+				{
+					views.push_back(tRenderTarget->mDepthImage->mView);
+				}
+
+				VkFramebufferCreateInfo framebufferInfo{};
+				framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+				framebufferInfo.renderPass = tRenderTarget->mPass;
+				framebufferInfo.attachmentCount = static_cast<uint32_t>(views.size());;
+				framebufferInfo.pAttachments = views.data();
+				framebufferInfo.width = tRenderTarget->mWidth;
+				framebufferInfo.height = tRenderTarget->mHeight;
+				framebufferInfo.layers = 1;
+
+				if (vkCreateFramebuffer(aRendererContext->mDevice->mDevice, &framebufferInfo, nullptr, &tRenderTarget->mFramebuffer) != VK_SUCCESS) {
+					throw std::runtime_error("failed to create framebuffer!");
+				}
+
+
+				return tRenderTarget;
+			}
+
+
+
+			static void DestroyRenderTarget(std::shared_ptr<RenderContext> aContext, std::shared_ptr<RenderTarget> aRenderTarget)
+			{
+				assert(aContext);
+				assert(aRenderTarget);
+
+				vkDestroyFramebuffer(aContext->mDevice->mDevice, aRenderTarget->mFramebuffer, nullptr);
+				vkDestroyRenderPass(aContext->mDevice->mDevice, aRenderTarget->mPass, nullptr);
+				aRenderTarget->mWidth = 0;
+				aRenderTarget->mHeight = 0;
+
+				for (auto& eColorImages : aRenderTarget->mColorImages)
+				{
+					vkDestroyImageView(aContext->mDevice->mDevice, eColorImages->mView, nullptr);
+					vmaDestroyImage(aContext->memoryAllocator, eColorImages->mImage, eColorImages->mAllocation);
+				}
+
+				if (aRenderTarget->mDepthImage)
+				{
+					vkDestroyImageView(aContext->mDevice->mDevice, aRenderTarget->mDepthImage->mView, nullptr);
+					vmaDestroyImage(aContext->memoryAllocator, aRenderTarget->mDepthImage->mImage, aRenderTarget->mDepthImage->mAllocation);
+				}
 			}
 
 		};

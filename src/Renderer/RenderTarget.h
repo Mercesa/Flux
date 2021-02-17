@@ -21,6 +21,7 @@ namespace Flux
 			uint32_t mWidth;
 			uint32_t mHeight;
 			std::vector<TargetDesc> mTargets;
+			std::optional<TargetDesc>	mDepthTarget;
 		};
 
 		struct RenderTarget
@@ -38,15 +39,15 @@ namespace Flux
 			VkFramebuffer mFramebuffer;
 			VkRenderPass mPass;
 
+			//,
+			//	VkFramebuffer aFrameBuffer, VkRenderPass aRenderPass,
+			//	std::shared_ptr<Gfx::Texture> aDepthImage = nullptr
+
 			RenderTarget(
 				uint32_t aWidth, uint32_t aHeight,
-				std::vector<std::shared_ptr<Gfx::Texture>> aColorImages,
-				VkFramebuffer aFrameBuffer, VkRenderPass aRenderPass,
-				std::shared_ptr<Gfx::Texture> aDepthImage = nullptr) :
+				std::vector<std::shared_ptr<Gfx::Texture>> aColorImages) :
 				mWidth(aWidth), mHeight(aHeight),
-				mColorImages(mColorImages),
-				mFramebuffer(aFrameBuffer), mPass(aRenderPass),
-				mDepthImage(aDepthImage)
+				mColorImages(mColorImages)
 			{}
 		};
 	}
