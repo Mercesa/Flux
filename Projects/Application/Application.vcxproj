@@ -159,6 +159,7 @@
     <ClInclude Include="..\..\src\Application\Rendering\Material.h" />
     <ClInclude Include="..\..\src\Application\Rendering\Mesh.h" />
     <ClInclude Include="..\..\src\Application\Rendering\Model.h" />
+    <ClInclude Include="..\..\src\Application\Rendering\Pipelines.h" />
     <ClInclude Include="..\..\src\Application\Rendering\RenderDataStructs.h" />
     <ClInclude Include="..\..\src\Application\Rendering\RenderingResourceManager.h" />
     <ClInclude Include="..\..\src\Application\Rendering\RenderState.h" />

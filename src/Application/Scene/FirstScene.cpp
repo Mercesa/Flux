@@ -80,7 +80,7 @@ void Flux::FirstScene::Init()
 		tSceneObject->mRenderState.shaders.push_back({ ShaderTypes::eVertex, 		"Resources/Shaders/basicModel.vert.spv" });
 		tSceneObject->mRenderState.shaders.push_back({ ShaderTypes::eFragment, 		"Resources/Shaders/basicModel.frag.spv" });
 
-		glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(0.01f));
+		glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(0.05f));
 
 		tSceneObject->transform = scaleMatrix;
 
@@ -156,7 +156,7 @@ void Flux::FirstScene::Init()
 				l->linear = 0.22f;
 				l->quadratic = 0.2f;
 				l->position = glm::vec3(x * 20, y * 5.0f, z * 5.0f);
-				l->color = glm::vec3(1.0f - (x % 2), 1.0f - (y % 2), 1.0f - (z % 2));
+				l->color = glm::vec3(10.0f, 10.0f, 10.0f );
 
 				this->mLights.push_back(l);
 			}

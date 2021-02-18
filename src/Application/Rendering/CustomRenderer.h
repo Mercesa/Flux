@@ -102,7 +102,6 @@ namespace Flux
 
 		VkSampler textureSampler;
 
-		VkRenderPass renderPass;
 		VkDescriptorSetLayout descriptorSetLayout;
 
 		VkDescriptorSetLayout descriptorSetLayoutPerObject;
@@ -131,7 +130,73 @@ namespace Flux
 
 		std::unique_ptr<RenderingResourceManager> mResourceManager;
 
+		struct VertexPosUv
+		{
+			glm::vec3 position;
+			glm::vec2 texCoords;
+			glm::vec3 normal;
+			glm::vec3 bitangent;
+			glm::vec3 tangent;
+		};
 
+
+
+		struct Quad
+		{
+			std::vector<VertexPosUv> fsQuadVertices
+			{
+				{glm::vec3(-1.0f, -1.0f, 0.0f), glm::vec2(0.0f)}, // top left
+				{glm::vec3(1.0f, -1.0f, 0.0f), glm::vec2(1.0f, 0.0f)}, // top right
+				{glm::vec3(-1.0f, 1.0f, 0.0f), glm::vec2(0.0f, 1.0f)}, // bottom left
+				{glm::vec3(1.0f, 1.0f, 0.0f), glm::vec2(1.0f, 1.0f)}, // bottom right
+			};
+
+			std::vector<uint32_t> fsQuadIndices
+			{
+				2, 1, 0, 3, 1, 2
+			};
+
+			std::vector<VkVertexInputAttributeDescription> GetVertexInputAttributes()
+			{
+				std::vector<VkVertexInputAttributeDescription> vertexAttrDescriptions;
+				vertexAttrDescriptions.resize(5);
+
+				vertexAttrDescriptions[0].binding = 0;
+				vertexAttrDescriptions[0].location = 0;
+				vertexAttrDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+				vertexAttrDescriptions[0].offset = offsetof(VertexData, position);
+
+				vertexAttrDescriptions[1].binding = 0;
+				vertexAttrDescriptions[1].location = 1;
+				vertexAttrDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+				vertexAttrDescriptions[1].offset = offsetof(VertexData, texCoords);
+
+				vertexAttrDescriptions[2].binding = 0;
+				vertexAttrDescriptions[2].location = 2;
+				vertexAttrDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+				vertexAttrDescriptions[2].offset = offsetof(VertexData, normal);
+
+				vertexAttrDescriptions[3].binding = 0;
+				vertexAttrDescriptions[3].location = 3;
+				vertexAttrDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+				vertexAttrDescriptions[3].offset = offsetof(VertexData, tangent);
+
+				vertexAttrDescriptions[4].binding = 0;
+				vertexAttrDescriptions[4].location = 4;
+				vertexAttrDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
+				vertexAttrDescriptions[4].offset = offsetof(VertexData, bitangent);
+
+				return vertexAttrDescriptions;
+			}
+
+			std::shared_ptr<Gfx::BufferGPU> vertexBuffer;
+			std::shared_ptr<Gfx::BufferGPU> indexBuffer;
+
+			VkPipeline pipeline;
+			VkPipelineLayout pipelineLayout;
+			VkDescriptorSetLayout descriptorSetLayout;
+			VkDescriptorSet descriptorSet;
+		} fsQuad;
 
 		bool framebufferResized = false;
 
@@ -147,15 +212,11 @@ namespace Flux
 
 		void RecreateSwapChain();
 
-		void CreateRenderPass();
-
 		VkPipeline CreateGraphicsPipelineForState(RenderState state);
 		std::optional<uint32_t> QueryPipeline(RenderState state);
 		uint32_t CreatePipeline(RenderState state);
 
 		void CreateDescriptorSetLayout();
-
-		void CreateFramebuffers();
 
 		void CreateCommandPool();
 
@@ -183,7 +244,9 @@ namespace Flux
 		std::shared_ptr<Flux::Gfx::Queue> mQueuePresent;
 		std::shared_ptr<Flux::Gfx::DescriptorPool> mDescriptorPool;
 
+		std::shared_ptr<Flux::Gfx::RenderTarget> mRenderTargetScene;
 		std::shared_ptr<Flux::Gfx::RenderTarget> mRenderTargetFinal;
+
 
 	};
 

@@ -39,7 +39,22 @@ namespace Flux
 		class Renderer
 		{
 		public:
-			static VkShaderModule CreateShaderModule(VkDevice aDevice, const std::vector<char>& code);
+
+			static VkShaderModule CreateShaderModule(VkDevice aDevice, const std::vector<char>& code) {
+
+				assert(code.size() > 0);
+				VkShaderModuleCreateInfo createInfo{};
+				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+				createInfo.codeSize = code.size();
+				createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+				VkShaderModule shaderModule;
+				if (vkCreateShaderModule(aDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+					throw std::runtime_error("failed to create shader module!");
+				}
+
+				return shaderModule;
+			}
 
 			static VkCommandBuffer BeginSingleTimeCommands(VkDevice aDevice, VkCommandPool aCmdPool);
 
@@ -921,7 +936,7 @@ namespace Flux
 				for (int i = 0; i < aRenderTargetDesc->mTargets.size(); ++i)
 				{
 					tTextures.push_back(
-						CreateTexture(aRendererContext, aDevice->mDevice, aQueue->mVkQueue, aPool, aAllocator, aRenderTargetDesc->mWidth, aRenderTargetDesc->mHeight, 1, aRenderTargetDesc->mTargets[i].format, VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT));
+						CreateTexture(aRendererContext, aDevice->mDevice, aQueue->mVkQueue, aPool, aAllocator, aRenderTargetDesc->mWidth, aRenderTargetDesc->mHeight, 1, aRenderTargetDesc->mTargets[i].format, VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT));
 
 					tTextures[i]->mFormat = aRenderTargetDesc->mTargets[i].format;
 				}

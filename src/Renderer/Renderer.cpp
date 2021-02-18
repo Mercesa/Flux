@@ -5,22 +5,6 @@ using namespace Flux;
 using namespace Flux::Gfx;
 
 
-VkShaderModule Renderer::CreateShaderModule(VkDevice aDevice, const std::vector<char>& code) {
-
-	assert(code.size() > 0);
-	VkShaderModuleCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	createInfo.codeSize = code.size();
-	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-	VkShaderModule shaderModule;
-	if (vkCreateShaderModule(aDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create shader module!");
-	}
-
-	return shaderModule;
-}
-
 VkCommandBuffer Renderer::BeginSingleTimeCommands(VkDevice aDevice, VkCommandPool aCmdPool) {
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -158,6 +142,14 @@ void Flux::Gfx::Renderer::TransitionImageLayout(VkDevice aDevice, VkQueue aQueue
 
 		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	{
+		barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 	}
 	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 	{

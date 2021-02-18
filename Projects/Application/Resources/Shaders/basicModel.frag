@@ -49,7 +49,11 @@ void main() {
     float viewDistance = sqrt(dot(viewDir, viewDir));
 
 
-    vec3 albedo = vec3(texture(sampler2D(textureAlbedo, basicSampler), outTexCoord));
+    vec4 albedo = texture(sampler2D(textureAlbedo, basicSampler), outTexCoord);
+
+
+    if(albedo.a < 0.99)
+        discard;
 
     viewDir = normalize(viewDir);
 
@@ -71,10 +75,10 @@ void main() {
 
         float lightVecLength = length(lightVec);
         float attenuation = 1.0/(lights[a].constantFactor + lights[a].linearFactor * lightVecLength + lights[a].quadraticFactor * (lightVecLength * lightVecLength));
-        result += (attenuation + diffuse * attenuation + specular * attenuation) * albedo;
+        result += (attenuation + diffuse * attenuation + specular * attenuation) * albedo.rgb;
     }
 
-    vec3 color = applyFog(result, viewDistance, 0.005);
+    //vec3 color = applyFog(result, viewDistance, 0.005);
 
-    outColor = vec4(color, 1.0);
+    outColor = vec4(result.rgb, 1.0);
 }

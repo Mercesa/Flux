@@ -22,6 +22,9 @@
     <ClInclude Include="..\..\src\Common\AssetProcessing\AssetManager.h">
       <Filter>src\AssetProcessing</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\Common\FileHandling\FileReadUtility.h">
+      <Filter>src\FileHandling</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Common\Time\Timer.cpp">
@@ -49,6 +52,9 @@
     </Filter>
     <Filter Include="src\Time">
       <UniqueIdentifier>{dd125f02-9ac6-4556-8615-1652db9eb892}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\FileHandling">
+      <UniqueIdentifier>{23f1baa3-9cfc-4f5e-aa27-14388d60abfb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

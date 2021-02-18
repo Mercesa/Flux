@@ -25,6 +25,7 @@
     <ClInclude Include="..\..\src\Common\AssetProcessing\iTextureReader.h" />
     <ClInclude Include="..\..\src\Common\AssetProcessing\ModelReaderAssimp.h" />
     <ClInclude Include="..\..\src\Common\AssetProcessing\STBTextureReader.h" />
+    <ClInclude Include="..\..\src\Common\FileHandling\FileReadUtility.h" />
     <ClInclude Include="..\..\src\Common\Time\Timer.h" />
   </ItemGroup>
   <ItemGroup>

@@ -26,6 +26,7 @@ enum class CullModes
 	eCullFrontAndBack
 };
 
+
 struct RasterizerState
 {
 	RasterizerState() : frontFaceMode(FrontFace::eCounterClockWise), cullMode(CullModes::eCullBack)
