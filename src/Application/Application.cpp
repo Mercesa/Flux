@@ -8,6 +8,7 @@
 #include "Application/Scene/FirstScene.h"
 
 #include "Common/Time/Timer.h"
+#include "Application/Rendering/ImguiRenderingHelper.h"
 
 const uint32_t WIDTH = 1366;
 const uint32_t HEIGHT = 768;
@@ -16,6 +17,8 @@ using namespace Flux;
 
 
 std::shared_ptr<Input> mInput;
+static bool pauseInput = false;
+static int32_t pauseKey = GLFW_KEY_TAB;
 
 void cursorpos_callback(GLFWwindow* window, double xpos, double ypos)
 {
@@ -23,22 +26,43 @@ void cursorpos_callback(GLFWwindow* window, double xpos, double ypos)
 	static double lastPosX = 0;
 	static double lastPosY = 0;
 
-	if (firstFrame)
+	if (!pauseInput)
+	{
+		if (firstFrame)
+		{
+			lastPosX = xpos;
+			lastPosY = ypos;
+			firstFrame = false;
+		}
+
+
+		mInput->MouseMoveInput(xpos, ypos);
+
+		lastPosX = xpos;
+		lastPosY = ypos;
+	}
+	else
 	{
 		lastPosX = xpos;
 		lastPosY = ypos;
-		firstFrame = false;
+		mInput->lastMousePos.x = lastPosX;
+		mInput->lastMousePos.y = lastPosY;
 	}
-
-	mInput->MouseMoveInput(xpos, ypos);
-
-	lastPosX = xpos;
-	lastPosY = ypos;
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	mInput->KeyboardInput(key, scancode, action, mods);
+	if (!pauseInput)
+	{
+		mInput->KeyboardInput(key, scancode, action, mods);
+	}
+	else
+	{
+		if (key == pauseKey)
+		{
+			mInput->KeyboardInput(key, scancode, action, mods);
+		}
+	}
 }
 
 Flux::Application::Application() : mResized(false), mRenderer(nullptr), mWindow(nullptr)
@@ -74,9 +98,14 @@ void Flux::Application::Run()
 	mRenderer->SetWindow(mWindow);
 	mRenderer->Init();
 
+
+
 	std::shared_ptr<Timer> tTimer = std::make_shared<Timer>();
 	tTimer->Reset();
 	float tDeltaTime = 0.0f;
+
+	ImGuiIO& io = ImGui::GetIO();
+
 
 	mScene->Init();
 	while (!glfwWindowShouldClose(mWindow)) {
@@ -89,9 +118,17 @@ void Flux::Application::Run()
 		{
 			break;
 		}
+
+		if (mInput->GetKeyUp(pauseKey))
+		{
+			pauseInput = !pauseInput;
+		}
+
 		mScene->Update(tDeltaTime);
 		mRenderer->Draw(mScene);
-		mInput->Update();
+
+
+		mInput->Update(pauseInput);
 	}
 	mScene->Cleanup();
 

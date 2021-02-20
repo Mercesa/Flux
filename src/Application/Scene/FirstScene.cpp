@@ -10,6 +10,9 @@
 #include "iSceneObject.h"
 #include "Application/Rendering/RenderDataStructs.h"
 
+#include "Application/Rendering/ImguiRenderingHelper.h"
+#include "glm/gtc/type_ptr.hpp"
+
 Flux::FirstScene::FirstScene(std::shared_ptr<Input> aInput) :
 	iScene(
 		std::make_shared<Camera>(glm::vec3(0.0f, 5.0f, 5.0f),
@@ -145,11 +148,11 @@ void Flux::FirstScene::Init()
 
 	}
 
-	for (uint32_t y = 0; y < 3; ++y)
+	for (uint32_t y = 0; y < 1; ++y)
 	{
-		for (uint32_t x = 0; x < 3; ++x)
+		for (uint32_t x = 0; x < 1; ++x)
 		{
-			for (uint32_t z = 0; z < 3; ++z)
+			for (uint32_t z = 0; z < 1; ++z)
 			{
 				std::shared_ptr<Light> l = std::make_shared<Light>();
 				l->constant = 1.0f;
@@ -188,6 +191,8 @@ void Flux::FirstScene::Update(float aDt)
 	//mLights[0]->position = glm::vec3(0.0f, 6.0f, 0.0f) + glm::vec3(5 * sinf(angle), 0.0f, 0.0f);
 
 	mCamera->ProcessMouseMovement(static_cast<float>(mInput->GetRelMousePos().x), static_cast<float>(mInput->GetRelMousePos().y), true);
+
+
 }
 
 void Flux::FirstScene::Cleanup()

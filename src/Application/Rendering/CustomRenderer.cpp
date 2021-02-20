@@ -9,7 +9,8 @@
 
 #include "Common/FileHandling/FileReadUtility.h"
 
-#include <stb_image.h>
+#include "glm/gtc/type_ptr.hpp"
+
 #include "ImguiRenderingHelper.h"
 
 using namespace Flux;
@@ -818,7 +819,8 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
         // Start the Dear ImGui frame
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();    }
+        ImGui::NewFrame();
+    }
 
     // Prepare scene resources
     auto& tSceneObjects = aScene->GetSceneObjects();
@@ -1151,15 +1153,20 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
         Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderTargetFinal->mColorImages[0]->mImage, mRenderTargetFinal->mColorImages[0]->mFormat, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, commandBuffers[imageIndex]);
     }
 
-    ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-    static float f = 0.0f;
-    ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+    ImGui::Begin("Lights");                          // Create a window called "Hello, world!" and append into it.
+    for (uint32_t i = 0; i < aScene->GetLights().size(); ++i)
+    {
 
-    ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+        ImGui::SliderFloat3("Position", glm::value_ptr(aScene->GetLights()[i]->position), 0.0f, 10.0);            // Edit 1 float using a slider from 0.0f to 1.0f
+        ImGui::Separator();
+    }
+
+
     ImGui::End();
 
     // Rendering
     ImGui::Render();
+
 
     VkClearValue clearValuesImgui{};
     clearValuesImgui.color = { 0.0f, 0.0f, 0.0f, 1.0f };

@@ -27,19 +27,25 @@ void MousebuttonInput(int key, int scancode, int action, int mods)
 }
 
 
-void Input::Update()
+void Input::Update(bool pause)
 {
 	for (int i = 0; i < numOfKeys; ++i)
 	{
 		keyUp[i] = false;
 		keyPress[i] = false;
+		if (pause)
+		{
+			keyHeld[i] = false;
+		}
 	}
 
 	relMousePos.x = 0.0f;
 	relMousePos.y = 0.0f;
 
+
 	firstFrame = false;
 }
+
 
 void Input::KeyboardInput(int key, int scancode, int action, int mods)
 {
