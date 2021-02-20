@@ -182,7 +182,14 @@ void ModelReaderAssimp::ProcessNode(aiNode* const a_Node, const aiScene* const a
 	}
 }
 
-std::shared_ptr<ModelAsset> Flux::ModelReaderAssimp::LoadModel(std::string aFilepath)
+bool Flux::ModelReaderAssimp::CanRead(std::filesystem::path const& aFilepath)
+{
+	//Assimp::Importer importer;
+	//return tExtension == ".obj" || tExtension == ".dae" || tExtension == ".blend" || tExtension == ".tga";
+	return true;
+}
+
+std::shared_ptr<ModelAsset> Flux::ModelReaderAssimp::LoadModel(std::filesystem::path const& aFilepath)
 {
 	std::shared_ptr<ModelAsset> tModelAsset;
 
@@ -192,7 +199,7 @@ std::shared_ptr<ModelAsset> Flux::ModelReaderAssimp::LoadModel(std::string aFile
 	const aiScene* scene;
 	Assimp::Importer importer;
 
-	scene = importer.ReadFile(aFilepath.c_str(), aiProcessPreset_TargetRealtime_Fast | aiProcess_CalcTangentSpace | aiProcess_GenUVCoords);
+	scene = importer.ReadFile(aFilepath.string().c_str(), aiProcessPreset_TargetRealtime_Fast | aiProcess_CalcTangentSpace | aiProcess_GenUVCoords);
 
 	assert(scene != nullptr);
 	if (!scene)
@@ -206,5 +213,5 @@ std::shared_ptr<ModelAsset> Flux::ModelReaderAssimp::LoadModel(std::string aFile
 	ProcessNode(scene->mRootNode, scene, tData);
 
 
-	return std::make_shared<ModelAsset>(tData, aFilepath);
+	return std::make_shared<ModelAsset>(tData, aFilepath.string());
 }

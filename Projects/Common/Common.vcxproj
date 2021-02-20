@@ -21,7 +21,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\src\Common\AssetProcessing\AssetManager.h" />
     <ClInclude Include="..\..\src\Common\AssetProcessing\AssetObjects.h" />
-    <ClInclude Include="..\..\src\Common\AssetProcessing\iModelLoader.h" />
+    <ClInclude Include="..\..\src\Common\AssetProcessing\iModelReader.h" />
     <ClInclude Include="..\..\src\Common\AssetProcessing\iTextureReader.h" />
     <ClInclude Include="..\..\src\Common\AssetProcessing\ModelReaderAssimp.h" />
     <ClInclude Include="..\..\src\Common\AssetProcessing\STBTextureReader.h" />

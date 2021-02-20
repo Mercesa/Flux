@@ -1,5 +1,6 @@
 #include "AssetManager.h"
 #include "STBTextureReader.h"
+#include "ModelReaderAssimp.h"
 
 namespace Flux
 {
@@ -15,7 +16,17 @@ namespace Flux
 
 	AssetManager::AssetManager()
 	{
-		mTextureReaders.push_back(std::make_shared<STBTextureReader>());
+		// Add texture readers
+		{
+			mTextureReaders.push_back(std::make_shared<STBTextureReader>());
+		}
+
+		// Add model readers
+		{
+			mModelReaders.push_back(std::make_shared<ModelReaderAssimp>());
+		}
+
+
 	}
 
 	std::shared_ptr<TextureAsset> AssetManager::LoadTexture(std::filesystem::path const &aFilepath)
@@ -37,6 +48,28 @@ namespace Flux
 		{
 			return mLoadedTextures[aFilepath.string()];
 		}
+		return nullptr;
+	}
+
+	std::shared_ptr<ModelAsset> AssetManager::LoadModel(std::filesystem::path const& aFilepath)
+	{
+		if (mLoadedModels.find(aFilepath.string()) == mLoadedModels.end())
+		{
+			for (auto tModelReader : mModelReaders)
+			{
+				if (tModelReader->CanRead(aFilepath))
+				{
+					mLoadedModels[aFilepath.string()] = tModelReader->LoadModel(aFilepath);
+					return mLoadedModels[aFilepath.string()];
+				}
+			}
+			throw ErrorUnsupportedAssetType(aFilepath);
+		}
+		else
+		{
+			return mLoadedModels[aFilepath.string()];
+		}
+
 		return nullptr;
 	}
 }

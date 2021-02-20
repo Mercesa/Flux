@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="..\..\src\Common\AssetProcessing\iModelLoader.h">
-      <Filter>src\AssetProcessing</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\Common\Time\Timer.h">
       <Filter>src\Time</Filter>
     </ClInclude>
@@ -24,6 +21,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\Common\FileHandling\FileReadUtility.h">
       <Filter>src\FileHandling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Common\AssetProcessing\iModelReader.h">
+      <Filter>src\AssetProcessing</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -55,6 +55,9 @@
     </Filter>
     <Filter Include="src\FileHandling">
       <UniqueIdentifier>{23f1baa3-9cfc-4f5e-aa27-14388d60abfb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Experiments">
+      <UniqueIdentifier>{ea675d1d-0ce3-4662-8b52-3737797ca620}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

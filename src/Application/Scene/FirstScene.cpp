@@ -31,9 +31,8 @@ void Flux::FirstScene::Init()
 	mCamera->MouseSensitivity = 1.0f;
 	mCamera->MovementSpeed = 5.0f;
 
-	std::shared_ptr<ModelReaderAssimp> tLoader = std::make_shared<ModelReaderAssimp>();
 
-	auto tAsset = tLoader->LoadModel("Resources\\Models\\Sponza\\sponza.obj");
+	auto tAsset = mAssetManager->LoadModel("Resources\\Models\\Sponza\\sponza.obj");
 
 	for (auto& mesh : tAsset->mMeshes)
 	{
@@ -91,7 +90,7 @@ void Flux::FirstScene::Init()
 
 	}
 
-	auto tAssetDragon = tLoader->LoadModel("Resources\\Models\\Dragon\\dragon.obj");
+	auto tAssetDragon = mAssetManager->LoadModel("Resources\\Models\\Dragon\\dragon.obj");
 
 	for (auto& mesh : tAssetDragon->mMeshes)
 	{
