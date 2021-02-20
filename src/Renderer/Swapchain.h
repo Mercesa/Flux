@@ -21,6 +21,7 @@ namespace Flux
 			VkImageView depthImageView;
 
 			std::vector<VkFramebuffer> mFramebuffers;
+			VkRenderPass mRenderPass;
 		};
 	}
 }

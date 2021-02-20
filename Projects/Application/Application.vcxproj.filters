@@ -17,6 +17,9 @@
     <Filter Include="src\Scene">
       <UniqueIdentifier>{cff76e85-c272-4162-b6d3-de470c80f51d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="External">
+      <UniqueIdentifier>{d922874d-53b7-4a48-8e40-dfac7642a4e5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\Application\Camera.h">
@@ -65,6 +68,30 @@
     <ClInclude Include="..\..\src\Application\Rendering\Pipelines.h">
       <Filter>src\Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\External\imgui-master\imconfig.h">
+      <Filter>External</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\External\imgui-master\imgui.h">
+      <Filter>External</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\External\imgui-master\imgui_internal.h">
+      <Filter>External</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\External\imgui-master\imstb_rectpack.h">
+      <Filter>External</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\External\imgui-master\imstb_textedit.h">
+      <Filter>External</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\External\imgui-master\imstb_truetype.h">
+      <Filter>External</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\External\imgui-master\backends\imgui_impl_vulkan.h">
+      <Filter>External</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\External\imgui-master\backends\imgui_impl_glfw.h">
+      <Filter>External</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Application\Input.cpp">
@@ -102,6 +129,27 @@
     </ClCompile>
     <ClCompile Include="..\..\src\Application\Rendering\RenderState.cpp">
       <Filter>src\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\External\imgui-master\imgui.cpp">
+      <Filter>External</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\External\imgui-master\imgui_demo.cpp">
+      <Filter>External</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\External\imgui-master\imgui_draw.cpp">
+      <Filter>External</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\External\imgui-master\imgui_tables.cpp">
+      <Filter>External</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\External\imgui-master\imgui_widgets.cpp">
+      <Filter>External</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\External\imgui-master\backends\imgui_impl_vulkan.cpp">
+      <Filter>External</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\External\imgui-master\backends\imgui_impl_glfw.cpp">
+      <Filter>External</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

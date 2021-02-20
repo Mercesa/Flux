@@ -224,27 +224,4 @@ void Flux::Gfx::Renderer::CreateBuffer(VkDevice aDevice, VmaAllocator aAllocator
 	vmaCreateBuffer(aAllocator, &bufferInfo, &allocInfo, &buffer, &bufferMemory, nullptr);
 }
 
-std::shared_ptr<Gfx::BufferGPU> Renderer::CreateAndUploadBuffer(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator, VmaMemoryUsage aBufferUsage, VkBufferUsageFlags aBufferFlags, void* aData, size_t aDataSize)
-{
-	std::shared_ptr<Gfx::BufferGPU> tReturnBuffer = std::make_shared<Gfx::BufferGPU>();
-
-	VkBuffer stagingBuffer;
-	VmaAllocation stagingBufferMemory;
-	CreateBuffer(aDevice, aAllocator, aDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer, stagingBufferMemory);
-
-	void* data;
-	vmaMapMemory(aAllocator, stagingBufferMemory, &data);
-	memcpy(data, aData, aDataSize);
-	vmaUnmapMemory(aAllocator, stagingBufferMemory);
-
-	tReturnBuffer->mMemoryUsage = aBufferUsage;
-	tReturnBuffer->mUsageFlags = aBufferFlags | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-	CreateBuffer(aDevice, aAllocator, aDataSize, tReturnBuffer->mUsageFlags, tReturnBuffer->mMemoryUsage, tReturnBuffer->mBuffer, tReturnBuffer->mAllocation);
-	CopyBuffer(aDevice, aQueue, aCmdPool, stagingBuffer, tReturnBuffer->mBuffer, aDataSize);
-
-	vkDestroyBuffer(aDevice, stagingBuffer, nullptr);
-	vmaFreeMemory(aAllocator, stagingBufferMemory);
-
-	return std::move(tReturnBuffer);
-}
 

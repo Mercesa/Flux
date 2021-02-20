@@ -109,7 +109,29 @@ namespace Flux
 				EndSingleTimeCommands(aDevice, aQueue, commandBuffer, aCmdPool);
 			}
 
-			static std::shared_ptr<Gfx::BufferGPU> CreateAndUploadBuffer(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator, VmaMemoryUsage aBufferUsage, VkBufferUsageFlags aBufferFlags, void* aData, size_t aDataSize);
+			static std::shared_ptr<Gfx::BufferGPU> CreateAndUploadBuffer(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VmaAllocator aAllocator, VmaMemoryUsage aBufferUsage, VkBufferUsageFlags aBufferFlags, void* aData, size_t aDataSize)
+			{
+				std::shared_ptr<Gfx::BufferGPU> tReturnBuffer = std::make_shared<Gfx::BufferGPU>();
+
+				VkBuffer stagingBuffer;
+				VmaAllocation stagingBufferMemory;
+				CreateBuffer(aDevice, aAllocator, aDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, stagingBuffer, stagingBufferMemory);
+
+				void* data;
+				vmaMapMemory(aAllocator, stagingBufferMemory, &data);
+				memcpy(data, aData, aDataSize);
+				vmaUnmapMemory(aAllocator, stagingBufferMemory);
+
+				tReturnBuffer->mMemoryUsage = aBufferUsage;
+				tReturnBuffer->mUsageFlags = aBufferFlags | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+				CreateBuffer(aDevice, aAllocator, aDataSize, tReturnBuffer->mUsageFlags, tReturnBuffer->mMemoryUsage, tReturnBuffer->mBuffer, tReturnBuffer->mAllocation);
+				CopyBuffer(aDevice, aQueue, aCmdPool, stagingBuffer, tReturnBuffer->mBuffer, aDataSize);
+
+				vkDestroyBuffer(aDevice, stagingBuffer, nullptr);
+				vmaFreeMemory(aAllocator, stagingBufferMemory);
+
+				return std::move(tReturnBuffer);
+			}
 
 
 			static std::shared_ptr<Texture> CreateTexture(std::shared_ptr<RenderContext> aContext,
@@ -720,6 +742,80 @@ namespace Flux
 					tSwapChain->depthImage, tSwapChain->depthImageMemory, 1);
 				tSwapChain->depthImageView = Renderer::CreateImageView(aContext, tSwapChain->depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 
+
+
+				{
+					std::vector<VkAttachmentDescription> tAttachments;
+
+					VkAttachmentDescription colorAttachment{};
+					colorAttachment.format = tSwapChain->mImageFormat;
+					colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+					colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+					colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+					colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+					colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+					colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+					colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+					tAttachments.push_back(colorAttachment);
+
+
+					std::vector<VkAttachmentReference> colorAttachmentRef{};
+
+					VkAttachmentReference ref;
+					ref.attachment = 0;
+					ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+
+
+					VkSubpassDescription subpass{};
+					subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+					subpass.colorAttachmentCount = 1;
+					subpass.pColorAttachments = &ref;
+
+					VkSubpassDependency dependency{};
+					dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+					dependency.dstSubpass = 0;
+					dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+					dependency.srcAccessMask = 0;
+					dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+					dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+					VkRenderPassCreateInfo renderPassInfo{};
+					renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+					renderPassInfo.attachmentCount = static_cast<uint32_t>(tAttachments.size());
+					renderPassInfo.pAttachments = tAttachments.data();
+					renderPassInfo.subpassCount = 1;
+					renderPassInfo.pSubpasses = &subpass;
+					renderPassInfo.dependencyCount = 1;
+					renderPassInfo.pDependencies = &dependency;
+
+					if (vkCreateRenderPass(aContext->mDevice->mDevice, &renderPassInfo, nullptr, &tSwapChain->mRenderPass) != VK_SUCCESS) {
+						throw std::runtime_error("failed to create render pass!");
+					}
+
+
+					for (auto& swapchainImage : tSwapChain->mImageViews)
+					{
+						VkFramebufferCreateInfo framebufferInfo{};
+						framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+						framebufferInfo.renderPass = tSwapChain->mRenderPass;
+						framebufferInfo.attachmentCount = 1;
+						framebufferInfo.pAttachments = &swapchainImage;
+						framebufferInfo.width = tSwapChain->mExtent.width;
+						framebufferInfo.height = tSwapChain->mExtent.height;
+						framebufferInfo.layers = 1;
+
+						VkFramebuffer fb;
+						if (vkCreateFramebuffer(aContext->mDevice->mDevice, &framebufferInfo, nullptr, &fb) != VK_SUCCESS) {
+							throw std::runtime_error("failed to create framebuffer!");
+						}
+
+						tSwapChain->mFramebuffers.push_back(fb);
+					}
+
+
+				}
+
 				return tSwapChain;
 			}
 
@@ -738,6 +834,13 @@ namespace Flux
 				vkDestroySwapchainKHR(aContext->mDevice->mDevice, aSwapchain->mSwapChain, nullptr);
 				vkDestroySurfaceKHR(aContext->instance, aContext->surface, nullptr);
 				aContext->surface = VK_NULL_HANDLE;
+
+				for (auto& framebuffer : aSwapchain->mFramebuffers)
+				{
+					vkDestroyFramebuffer(aContext->mDevice->mDevice, framebuffer, nullptr);
+				}
+
+				vkDestroyRenderPass(aContext->mDevice->mDevice, aSwapchain->mRenderPass, nullptr);
 
 			}
 

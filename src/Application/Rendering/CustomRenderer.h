@@ -41,10 +41,11 @@
 
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 constexpr int AMOUNT_OF_SUPPORTED_LIGHTS = 1024;
+constexpr bool FORCE_DEBUG = true;
 
 
 #ifdef NDEBUG
-const bool enableValidationLayers = false;
+const bool enableValidationLayers = true;
 #else
 const bool enableValidationLayers = true;
 #endif
@@ -237,7 +238,6 @@ namespace Flux
 
 
 		public:
-		std::shared_ptr<Flux::Gfx::Renderer> mRenderer;
 		std::shared_ptr<Flux::Gfx::RenderContext> mRenderContext;
 		std::shared_ptr<Flux::Gfx::Swapchain> mSwapchain;
 		std::shared_ptr<Flux::Gfx::Queue> mQueueGraphics;

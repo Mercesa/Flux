@@ -118,7 +118,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\SPIRV-Reflect-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir);$(SolutionDir)\External\assimp-master\include;$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\SPIRV-Reflect-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir);$(SolutionDir)\External\assimp-master\include;$(SolutionDir)src;$(SolutionDir)External\imgui-master\backends;$(SolutionDir)External\imgui-master;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -137,7 +137,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\SPIRV-Reflect-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir);$(SolutionDir)\External\assimp-master\include;$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\SPIRV-Reflect-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir);$(SolutionDir)\External\assimp-master\include;$(SolutionDir)src;$(SolutionDir)External\imgui-master\backends;$(SolutionDir)External\imgui-master;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -151,6 +151,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\External\imgui-master\backends\imgui_impl_glfw.h" />
+    <ClInclude Include="..\..\External\imgui-master\backends\imgui_impl_vulkan.h" />
+    <ClInclude Include="..\..\External\imgui-master\imconfig.h" />
+    <ClInclude Include="..\..\External\imgui-master\imgui.h" />
+    <ClInclude Include="..\..\External\imgui-master\imgui_internal.h" />
+    <ClInclude Include="..\..\External\imgui-master\imstb_rectpack.h" />
+    <ClInclude Include="..\..\External\imgui-master\imstb_textedit.h" />
+    <ClInclude Include="..\..\External\imgui-master\imstb_truetype.h" />
     <ClInclude Include="..\..\src\Application\Application.h" />
     <ClInclude Include="..\..\src\Application\BasicGeometry.h" />
     <ClInclude Include="..\..\src\Application\Camera.h" />
@@ -169,6 +177,13 @@
     <ClInclude Include="Context.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\External\imgui-master\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\..\External\imgui-master\backends\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="..\..\External\imgui-master\imgui.cpp" />
+    <ClCompile Include="..\..\External\imgui-master\imgui_demo.cpp" />
+    <ClCompile Include="..\..\External\imgui-master\imgui_draw.cpp" />
+    <ClCompile Include="..\..\External\imgui-master\imgui_tables.cpp" />
+    <ClCompile Include="..\..\External\imgui-master\imgui_widgets.cpp" />
     <ClCompile Include="..\..\src\Application\Application.cpp" />
     <ClCompile Include="..\..\src\Application\BasicGeometry.cpp" />
     <ClCompile Include="..\..\src\Application\Input.cpp" />

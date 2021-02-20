@@ -10,6 +10,7 @@
 #include "Common/FileHandling/FileReadUtility.h"
 
 #include <stb_image.h>
+#include "ImguiRenderingHelper.h"
 
 using namespace Flux;
 using namespace Flux::Gfx;
@@ -17,6 +18,15 @@ using namespace Flux::Gfx;
 
 #include "Renderer/BufferGPU.h"
 #include "Application/Rendering/Pipelines.h"
+
+static void check_vk_result(VkResult err)
+{
+    if (err == 0)
+        return;
+    fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+    if (err < 0)
+        abort();
+}
 
 Flux::CustomRenderer::CustomRenderer(GLFWwindow* aWindow) : mVsync(true), mWindow(aWindow)
 {
@@ -31,18 +41,52 @@ Flux::CustomRenderer::CustomRenderer(GLFWwindow* aWindow) : mVsync(true), mWindo
     QueueDesc.mType = Flux::Gfx::eQueueType::QUEUE_TYPE_PRESENT;
     mQueuePresent = Renderer::CreateQueue(mRenderContext, &QueueDesc);
 
-    mRenderer = std::make_shared<Renderer>();
     mResourceManager = std::unique_ptr<RenderingResourceManager>(new RenderingResourceManager());
 
     Flux::Gfx::DescriptorPoolCreateDesc DescriptorPoolCDesc{};
     DescriptorPoolCDesc.maxDescriptorSets = 1024;
 
     mDescriptorPool = Renderer::CreateDescriptorPool(mRenderContext, &DescriptorPoolCDesc);
+
 }
 
 void Flux::CustomRenderer::Init()
 {
     InitVulkan();
+
+
+    {
+        ImGui_ImplVulkan_InitInfo imguiInitInfo{};
+
+        imguiInitInfo.Instance = mRenderContext->instance;
+        imguiInitInfo.PhysicalDevice = mRenderContext->mDevice->mPhysicalDevice;
+        imguiInitInfo.Device = mRenderContext->mDevice->mDevice;
+        imguiInitInfo.Queue = mQueueGraphics->mVkQueue;
+        imguiInitInfo.QueueFamily = mQueueGraphics->mQueueIndex;
+        imguiInitInfo.DescriptorPool = mDescriptorPool->mPool;
+        imguiInitInfo.MinImageCount = 2;
+        imguiInitInfo.ImageCount = MAX_FRAMES_IN_FLIGHT;
+        imguiInitInfo.CheckVkResultFn = check_vk_result;
+
+        // Setup Dear ImGui context
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+        ImGui::StyleColorsDark();
+
+        ImGui_ImplGlfw_InitForVulkan(mWindow, true);
+        ImGui_ImplVulkan_Init(&imguiInitInfo, mSwapchain->mRenderPass);
+
+        // Upload fonts texture
+        VkCommandBuffer cmdBuffer = Renderer::BeginSingleTimeCommands(mRenderContext->mDevice->mDevice, commandPool);
+        ImGui_ImplVulkan_CreateFontsTexture(cmdBuffer);
+        Renderer::EndSingleTimeCommands(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, cmdBuffer, commandPool);
+        ImGui_ImplVulkan_DestroyFontUploadObjects();
+
+    }
+
+
 }
 
 void Flux::CustomRenderer::WaitIdle()
@@ -71,7 +115,7 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
 
     uint32_t emptyData[1];
     emptyData[0] = 0xFF000000;
-    mEmptyTexture =  mRenderer->CreateAndUploadTexture(mRenderContext,
+    mEmptyTexture =  Renderer::CreateAndUploadTexture(mRenderContext,
         mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
         1, 1,
         sizeof(uint32_t), 1,
@@ -87,9 +131,9 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
 		mRenderTargetFinal = Renderer::CreateRenderTarget(mRenderContext, mRenderContext->mDevice, mQueueGraphics, commandPool, mRenderContext->memoryAllocator, &RTCreateDesc);
 
 
-		fsQuad.vertexBuffer =  mRenderer->CreateAndUploadBuffer(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, fsQuad.fsQuadVertices.data(), fsQuad.fsQuadVertices.size() * sizeof(VertexPosUv));
+		fsQuad.vertexBuffer =  Renderer::CreateAndUploadBuffer(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, fsQuad.fsQuadVertices.data(), fsQuad.fsQuadVertices.size() * sizeof(VertexPosUv));
 
-		fsQuad.indexBuffer =  mRenderer->CreateAndUploadBuffer(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT, fsQuad.fsQuadIndices.data(), fsQuad.fsQuadIndices.size() * sizeof(uint32_t));
+		fsQuad.indexBuffer =  Renderer::CreateAndUploadBuffer(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT, fsQuad.fsQuadIndices.data(), fsQuad.fsQuadIndices.size() * sizeof(uint32_t));
 
         RenderState state{};
 		state.shaders.push_back({ Flux::ShaderTypes::eVertex, "Resources/Shaders/basic.vert.spv" });
@@ -196,6 +240,13 @@ void CustomRenderer::CustomRenderer::CleanupSwapChain() {
 
 void CustomRenderer::Cleanup() {
     CleanupSwapChain();
+
+    // Imgui cleanup
+    {
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+    }
+
 
     vkDestroySampler(mRenderContext->mDevice->mDevice, textureSampler, nullptr);
 
@@ -342,7 +393,7 @@ VkPipeline Flux::CustomRenderer::CreateGraphicsPipelineForState(RenderState stat
     {
         auto shaderCode =  Common::ReadFile(e.second);
 
-        VkShaderModule shaderModule = mRenderer->CreateShaderModule(mRenderContext->mDevice->mDevice, shaderCode);
+        VkShaderModule shaderModule = Renderer::CreateShaderModule(mRenderContext->mDevice->mDevice, shaderCode);
 
         VkPipelineShaderStageCreateInfo shaderStageInfo{};
         shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -612,7 +663,7 @@ void CustomRenderer::CreateDescriptorSetLayout()
 }
 
 void CustomRenderer::CreateCommandPool() {
-    Flux::Gfx::QueueFamilyIndices queueFamilyIndices = mRenderer->findQueueFamilies(mRenderContext->mDevice->mPhysicalDevice, mRenderContext->surface);
+    Flux::Gfx::QueueFamilyIndices queueFamilyIndices = Renderer::findQueueFamilies(mRenderContext->mDevice->mPhysicalDevice, mRenderContext->surface);
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -658,12 +709,12 @@ void CustomRenderer::CreateUniformBuffers()
     {
         {
             mUniformBuffersCamera[i] = std::make_shared<BufferGPU>();
-            mRenderer->CreateBuffer(mRenderContext->mDevice->mDevice, mRenderContext->memoryAllocator, sizeof(UniformBufferCamera), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, mUniformBuffersCamera[i]->mBuffer, mUniformBuffersCamera[i]->mAllocation);
+            Renderer::CreateBuffer(mRenderContext->mDevice->mDevice, mRenderContext->memoryAllocator, sizeof(UniformBufferCamera), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, mUniformBuffersCamera[i]->mBuffer, mUniformBuffersCamera[i]->mAllocation);
         }
 
         {
             mLightData.mUniformBuffersLights[i] = std::make_shared<BufferGPU>();
-            mRenderer->CreateBuffer(mRenderContext->mDevice->mDevice, mRenderContext->memoryAllocator, sizeof(UniformBufferLights) * AMOUNT_OF_SUPPORTED_LIGHTS, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, mLightData.mUniformBuffersLights[i]->mBuffer, mLightData.mUniformBuffersLights[i]->mAllocation);
+            Renderer::CreateBuffer(mRenderContext->mDevice->mDevice, mRenderContext->memoryAllocator, sizeof(UniformBufferLights) * AMOUNT_OF_SUPPORTED_LIGHTS, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, mLightData.mUniformBuffersLights[i]->mBuffer, mLightData.mUniformBuffersLights[i]->mAllocation);
         }
     }
 }
@@ -761,8 +812,15 @@ void CustomRenderer::CreateSyncObjects() {
 
 void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
-    // Prepare scene resources
+    // Imgui start
 
+    {
+        // Start the Dear ImGui frame
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();    }
+
+    // Prepare scene resources
     auto& tSceneObjects = aScene->GetSceneObjects();
 
     for (auto object : tSceneObjects)
@@ -772,12 +830,12 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
             object->mMesh = std::make_shared<MeshVK>();
             const auto tAsset = object->mAsset;
 
-            object->mMesh->mVertexBuffer = mRenderer->CreateAndUploadBuffer(
+            object->mMesh->mVertexBuffer = Renderer::CreateAndUploadBuffer(
                 mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
                 VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 tAsset->mVertexData.data(), sizeof(tAsset->mVertexData[0]) * tAsset->mVertexData.size());
 
-            object->mMesh->mIndexBuffer = mRenderer->CreateAndUploadBuffer(
+            object->mMesh->mIndexBuffer = Renderer::CreateAndUploadBuffer(
                 mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
                 VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                 tAsset->mIndices.data(), sizeof(tAsset->mIndices[0]) * tAsset->mIndices.size());
@@ -794,7 +852,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
                 auto queryResultTextureAlbedo = mResourceManager->QueryTextureAssetRegistered(tAssetAlbedo);
                 if (!queryResultTextureAlbedo.has_value())
                 {
-                    object->mMaterial->mTextureAlbedo = mRenderer->CreateAndUploadTexture(mRenderContext,
+                    object->mMaterial->mTextureAlbedo = Renderer::CreateAndUploadTexture(mRenderContext,
                         mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
                         tAssetAlbedo->mWidth, tAssetAlbedo->mHeight,
                         tAssetAlbedo->mData.size(), tAssetAlbedo->mMipLevels,
@@ -815,7 +873,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
                 auto queryResultTextureNormal = mResourceManager->QueryTextureAssetRegistered(tAssetNormal);
                 if (!queryResultTextureNormal.has_value())
                 {
-                    object->mMaterial->mTextureNormal = mRenderer->CreateAndUploadTexture(mRenderContext,
+                    object->mMaterial->mTextureNormal = Renderer::CreateAndUploadTexture(mRenderContext,
                         mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
                         tAssetNormal->mWidth, tAssetNormal->mHeight,
                         tAssetNormal->mData.size(), tAssetNormal->mMipLevels,
@@ -835,7 +893,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
                 auto queryResultTextureSpec = mResourceManager->QueryTextureAssetRegistered(tAssetSpecular);
                 if (!queryResultTextureSpec.has_value())
                 {
-                    object->mMaterial->mTextureSpecular = mRenderer->CreateAndUploadTexture(mRenderContext,
+                    object->mMaterial->mTextureSpecular = Renderer::CreateAndUploadTexture(mRenderContext,
                         mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator,
                         tAssetSpecular->mWidth, tAssetSpecular->mHeight,
                         tAssetSpecular->mData.size(), tAssetSpecular->mMipLevels,
@@ -1093,8 +1151,37 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
         Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderTargetFinal->mColorImages[0]->mImage, mRenderTargetFinal->mColorImages[0]->mFormat, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, commandBuffers[imageIndex]);
     }
 
+    ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+    static float f = 0.0f;
+    ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
 
+    ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+    ImGui::End();
 
+    // Rendering
+    ImGui::Render();
+
+    VkClearValue clearValuesImgui{};
+    clearValuesImgui.color = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+    ImDrawData* draw_data = ImGui::GetDrawData();
+    {
+        VkRenderPassBeginInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        info.renderPass = mSwapchain->mRenderPass;
+        info.framebuffer = mSwapchain->mFramebuffers[imageIndex];
+        info.renderArea.extent.width = mSwapchain->mExtent.width;
+        info.renderArea.extent.height = mSwapchain->mExtent.height;
+        info.clearValueCount = 1;
+        info.pClearValues = &clearValuesImgui;
+        vkCmdBeginRenderPass(commandBuffers[imageIndex], &info, VK_SUBPASS_CONTENTS_INLINE);
+    }
+
+    // Record dear imgui primitives into command buffer
+    ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffers[imageIndex]);
+
+    // Submit command buffer
+    vkCmdEndRenderPass(commandBuffers[imageIndex]);
 
 
     if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
