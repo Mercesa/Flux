@@ -86,8 +86,6 @@ void Flux::CustomRenderer::Init()
         ImGui_ImplVulkan_DestroyFontUploadObjects();
 
     }
-
-
 }
 
 void Flux::CustomRenderer::WaitIdle()
@@ -131,89 +129,6 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
 		RTCreateDesc.mTargets = { {VK_FORMAT_R8G8B8A8_UNORM} };
 		RTCreateDesc.mDepthTarget = { VK_FORMAT_D32_SFLOAT };
 		mRenderTargetFinal = Renderer::CreateRenderTarget(mRenderContext, mRenderContext->mDevice, mQueueGraphics, commandPool, mRenderContext->memoryAllocator, &RTCreateDesc);
-
-
-		fsQuad.vertexBuffer =  Renderer::CreateAndUploadBuffer(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, fsQuad.fsQuadVertices.data(), fsQuad.fsQuadVertices.size() * sizeof(VertexPosUv));
-
-		fsQuad.indexBuffer =  Renderer::CreateAndUploadBuffer(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderContext->memoryAllocator, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT, fsQuad.fsQuadIndices.data(), fsQuad.fsQuadIndices.size() * sizeof(uint32_t));
-
-        RenderState state{};
-		state.shaders.push_back({ Flux::ShaderTypes::eVertex, "Resources/Shaders/basic.vert.spv" });
-		state.shaders.push_back({ Flux::ShaderTypes::eFragment, "Resources/Shaders/basic.frag.spv" });
-
-        VkViewport viewport{};
-
-        viewport.width = mSwapchain->mExtent.width;
-        viewport.height = mSwapchain->mExtent.height;
-
-        VkRect2D scissor{};
-        scissor.offset = { 0, 0 };
-        scissor.extent = mSwapchain->mExtent;
-
-        VkDescriptorSetLayoutBinding textureImageSamplerLayoutBinding0{};
-        textureImageSamplerLayoutBinding0.binding = 0;
-        textureImageSamplerLayoutBinding0.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        textureImageSamplerLayoutBinding0.descriptorCount = 1;
-        textureImageSamplerLayoutBinding0.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        textureImageSamplerLayoutBinding0.pImmutableSamplers = nullptr;
-
-
-        std::array<VkDescriptorSetLayoutBinding, 1> bindings = { textureImageSamplerLayoutBinding0 };
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
-
-        if (vkCreateDescriptorSetLayout(mRenderContext->mDevice->mDevice, &layoutInfo, nullptr, &fsQuad.descriptorSetLayout))
-        {
-            throw std::runtime_error("failed to create descriptor set layout!");
-        }
-
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.pushConstantRangeCount = 0;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &fsQuad.descriptorSetLayout;
-
-        if (vkCreatePipelineLayout(mRenderContext->mDevice->mDevice, &pipelineLayoutInfo, nullptr, &fsQuad.pipelineLayout) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create pipeline layout!");
-        }
-
-        {
-            VkDescriptorSetAllocateInfo allocInfo{};
-            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            allocInfo.descriptorPool = mDescriptorPool->mPool;
-            allocInfo.descriptorSetCount = 1u;
-            allocInfo.pSetLayouts = &fsQuad.descriptorSetLayout;
-
-            if (vkAllocateDescriptorSets(mRenderContext->mDevice->mDevice, &allocInfo, &fsQuad.descriptorSet) != VK_SUCCESS)
-            {
-                throw std::runtime_error("Failed to allcoate descriptor sets!");
-            }
-
-        }
-
-
-        fsQuad.pipeline = CustomRendererCreateGraphicsPipelineForState(state, mRenderContext, viewport, scissor, fsQuad.pipelineLayout, mRenderTargetFinal->mPass, fsQuad.GetVertexInputAttributes());
-
-        VkDescriptorImageInfo imageInfoFS{};
-        imageInfoFS.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfoFS.sampler = textureSampler;
-        imageInfoFS.imageView = mRenderTargetScene->mColorImages[0]->mView;
-
-        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-
-        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = fsQuad.descriptorSet;
-        descriptorWrites[0].dstBinding = 0;
-        descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[0].descriptorCount = 1;
-        descriptorWrites[0].pImageInfo = &imageInfoFS;
-
-
-
-        vkUpdateDescriptorSets(mRenderContext->mDevice->mDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 
     // Compute shader
@@ -313,13 +228,12 @@ void CustomRenderer::CustomRenderer::CleanupSwapChain() {
 
     vkDestroyPipelineLayout(mRenderContext->mDevice->mDevice, pipelineLayoutSceneObjects, nullptr);
 
-    vkDestroyPipeline(mRenderContext->mDevice->mDevice, fsQuad.pipeline, nullptr);
-
     Renderer::DestroySwapchain(mRenderContext, mSwapchain);
 
     vkFreeDescriptorSets(mRenderContext->mDevice->mDevice, mDescriptorPool->mPool, descriptorSetsSceneObjects.size(), descriptorSetsSceneObjects.data());
     Renderer::DestroyRenderTarget(mRenderContext, mRenderTargetScene);
     Renderer::DestroyRenderTarget(mRenderContext, mRenderTargetFinal);
+
 
 }
 
@@ -341,7 +255,6 @@ void CustomRenderer::Cleanup() {
 
     vkDestroyDescriptorSetLayout(mRenderContext->mDevice->mDevice, descriptorSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(mRenderContext->mDevice->mDevice, descriptorSetLayoutSceneObjects, nullptr);
-    vkDestroyDescriptorSetLayout(mRenderContext->mDevice->mDevice, fsQuad.descriptorSetLayout, nullptr);
 
     for (auto& buffer : mSceneBuffers)
     {
@@ -373,16 +286,11 @@ void CustomRenderer::Cleanup() {
         vmaFreeMemory(this->mRenderContext->memoryAllocator, mUniformBuffersCamera[i]->mAllocation);
     }
 
-    vkDestroyBuffer(mRenderContext->mDevice->mDevice, fsQuad.vertexBuffer->mBuffer, nullptr);
-    vmaFreeMemory(this->mRenderContext->memoryAllocator, fsQuad.vertexBuffer->mAllocation);
-
-    vkDestroyBuffer(mRenderContext->mDevice->mDevice, fsQuad.indexBuffer->mBuffer, nullptr);
-    vmaFreeMemory(this->mRenderContext->memoryAllocator, fsQuad.indexBuffer->mAllocation);
+    vkDestroyDescriptorSetLayout(mRenderContext->mDevice->mDevice, mComputeDataPostfx.descriptorSetLayout, nullptr);
+    vkDestroyPipeline(mRenderContext->mDevice->mDevice, mComputeDataPostfx.pipeline, nullptr);
+    vkDestroyPipelineLayout(mRenderContext->mDevice->mDevice, mComputeDataPostfx.pipelineLayout, nullptr);
 
     vkFreeCommandBuffers(mRenderContext->mDevice->mDevice, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-
-    vkDestroyPipelineLayout(mRenderContext->mDevice->mDevice, fsQuad.pipelineLayout, nullptr);
-
 
     Renderer::DestroyDescriptorPool(mRenderContext, mDescriptorPool);
 
@@ -424,45 +332,6 @@ void CustomRenderer::RecreateSwapChain() {
         RTCreateDesc.mDepthTarget = { VK_FORMAT_D32_SFLOAT };
         mRenderTargetFinal = Renderer::CreateRenderTarget(mRenderContext, mRenderContext->mDevice, mQueueGraphics, commandPool, mRenderContext->memoryAllocator, &RTCreateDesc);
     }
-
-    {
-        VkDescriptorImageInfo imageInfoFS{};
-        imageInfoFS.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfoFS.sampler = textureSampler;
-        imageInfoFS.imageView = mRenderTargetScene->mColorImages[0]->mView;
-
-        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-
-        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = fsQuad.descriptorSet;
-        descriptorWrites[0].dstBinding = 0;
-        descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[0].descriptorCount = 1;
-        descriptorWrites[0].pImageInfo = &imageInfoFS;
-
-
-
-        vkUpdateDescriptorSets(mRenderContext->mDevice->mDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-    }
-
-    {
-        RenderState state{};
-        state.shaders.push_back({ Flux::ShaderTypes::eVertex, "Resources/Shaders/basic.vert.spv" });
-        state.shaders.push_back({ Flux::ShaderTypes::eFragment, "Resources/Shaders/basic.frag.spv" });
-
-        VkViewport viewport{};
-
-        viewport.width = mSwapchain->mExtent.width;
-        viewport.height = mSwapchain->mExtent.height;
-
-        VkRect2D scissor{};
-        scissor.offset = { 0, 0 };
-        scissor.extent = mSwapchain->mExtent;
-
-        fsQuad.pipeline = CustomRendererCreateGraphicsPipelineForState(state, mRenderContext, viewport, scissor, fsQuad.pipelineLayout, mRenderTargetFinal->mPass, fsQuad.GetVertexInputAttributes());
-    }
-
 
     CreateDescriptorSets();
 }
@@ -947,7 +816,6 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
                     object->mMaterial->mTextureAlbedo = queryResultTextureAlbedo.value();
                 }
             }
-
 
             {
                 const auto& tAssetNormal = object->mMaterial->mTextureAssetNormal;

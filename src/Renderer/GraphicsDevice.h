@@ -25,8 +25,6 @@ namespace Flux
 			}
 		};
 
-		struct QueueData;
-
 		struct GraphicsDevice
 		{
 			VkPhysicalDevice mPhysicalDevice;
@@ -35,7 +33,6 @@ namespace Flux
 			VkDevice mDevice;
 			std::string mDeviceName;
 			QueueFamilyIndices queueFamilies;
-
 		};
 	}
 
