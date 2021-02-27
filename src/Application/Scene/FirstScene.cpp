@@ -147,11 +147,11 @@ void Flux::FirstScene::Init()
 
 	}
 
-	for (uint32_t y = 0; y < 1; ++y)
+	for (uint32_t y = 0; y < 3; ++y)
 	{
-		for (uint32_t x = 0; x < 1; ++x)
+		for (uint32_t x = 0; x < 3; ++x)
 		{
-			for (uint32_t z = 0; z < 1; ++z)
+			for (uint32_t z = 0; z < 3; ++z)
 			{
 				std::shared_ptr<Light> l = std::make_shared<Light>();
 				l->constant = 1.0f;

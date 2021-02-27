@@ -104,7 +104,7 @@ void Flux::Application::Run()
 	tTimer->Reset();
 	float tDeltaTime = 0.0f;
 
-	ImGuiIO& io = ImGui::GetIO();
+	//ImGuiIO& io = ImGui::GetIO();
 
 
 	mScene->Init();

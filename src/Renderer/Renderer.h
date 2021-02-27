@@ -1,5 +1,30 @@
 #pragma once
 
+
+/*
+ * Copyright (c) 2018-2021 The Forge Interactive Inc.
+ *
+ * Some parts of the design and overal structure has been inspired by the The Forge
+ * (see https://github.com/ConfettiFX/The-Forge).
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+*/
+
 #include <stdexcept>
 #include <cassert>
 #include <vector>
@@ -26,19 +51,109 @@ namespace Flux
 	namespace Gfx
 	{
 
+		// This enum has been taken from The Forge from file https://github.com/ConfettiFX/The-Forge/blob/master/Common_3/Renderer/IRenderer.h , see the copy right license at the top of this file
+//		typedef enum ResourceState
+//		{
+//			RESOURCE_STATE_UNDEFINED = 0,
+//			RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER = 0x1,
+//			RESOURCE_STATE_INDEX_BUFFER = 0x2,
+//			RESOURCE_STATE_RENDER_TARGET = 0x4,
+//			RESOURCE_STATE_UNORDERED_ACCESS = 0x8,
+//			RESOURCE_STATE_DEPTH_WRITE = 0x10,
+//			RESOURCE_STATE_DEPTH_READ = 0x20,
+//			RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE = 0x40,
+//			RESOURCE_STATE_PIXEL_SHADER_RESOURCE = 0x80,
+//			RESOURCE_STATE_SHADER_RESOURCE = 0x40 | 0x80,
+//			RESOURCE_STATE_STREAM_OUT = 0x100,
+//			RESOURCE_STATE_INDIRECT_ARGUMENT = 0x200,
+//			RESOURCE_STATE_COPY_DEST = 0x400,
+//			RESOURCE_STATE_COPY_SOURCE = 0x800,
+//			RESOURCE_STATE_GENERIC_READ = (((((0x1 | 0x2) | 0x40) | 0x80) | 0x200) | 0x800),
+//			RESOURCE_STATE_PRESENT = 0x1000,
+//			RESOURCE_STATE_COMMON = 0x2000,
+//			RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE = 0x4000,
+//		} ResourceState;
+//
+//		VkAccessFlags util_to_vk_access_flags(Flux::Gfx::ResourceState aState)
+//		{
+//			VkAccessFlags ret = 0;
+//			if (aState & RESOURCE_STATE_COPY_SOURCE)
+//			{
+//				ret |= VK_ACCESS_TRANSFER_READ_BIT;
+//			}
+//			if (aState & RESOURCE_STATE_COPY_DEST)
+//			{
+//				ret |= VK_ACCESS_TRANSFER_WRITE_BIT;
+//			}
+//			if (aState & RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER)
+//			{
+//				ret |= VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+//			}
+//			if (aState & RESOURCE_STATE_INDEX_BUFFER)
+//			{
+//				ret |= VK_ACCESS_INDEX_READ_BIT;
+//			}
+//			if (aState & RESOURCE_STATE_UNORDERED_ACCESS)
+//			{
+//				ret |= VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+//			}
+//			if (aState & RESOURCE_STATE_INDIRECT_ARGUMENT)
+//			{
+//				ret |= VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+//			}
+//			if (aState & RESOURCE_STATE_RENDER_TARGET)
+//			{
+//				ret |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+//			}
+//			if (aState & RESOURCE_STATE_DEPTH_WRITE)
+//			{
+//				ret |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+//			}
+//			if (aState & RESOURCE_STATE_SHADER_RESOURCE)
+//			{
+//				ret |= VK_ACCESS_SHADER_READ_BIT;
+//			}
+//			if (aState & RESOURCE_STATE_PRESENT)
+//			{
+//				ret |= VK_ACCESS_MEMORY_READ_BIT;
+//			}
+//
+//#ifdef ENABLE_RAYTRACING
+//			if (state & RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE)
+//			{
+//				ret |= VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV;
+//			}
+//#endif
+//
+//			return ret;
+//		}
 
 		const std::vector<const char*> validationLayers = {
-	"VK_LAYER_KHRONOS_validation"
+	"VK_LAYER_KHRONOS_validation",
 		};
 
 		const std::vector<const char*> deviceExtensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME
+
+
 		};
 
 		class Texture;
 		class Renderer
 		{
 		public:
+
+			//static void SetDebugNameForobject(std::shared_ptr<RenderContext> aContext, uint64_t vkHandle, VkObjectType type, std::string aName)
+			//{
+			//	VkDebugUtilsObjectNameInfoEXT  nameInfo = {};
+			//	nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
+			//	nameInfo.objectType = type;
+			//	nameInfo.objectHandle = (uint64_t)vkHandle;
+			//	nameInfo.pObjectName = aName.c_str();
+			//	auto func = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(aContext->instance, "vkSetDebugUtilsObjectNameEXT");
+
+			//	func(aContext->mDevice->mDevice, &nameInfo);
+			//}
 
 			static VkShaderModule CreateShaderModule(VkDevice aDevice, const std::vector<char>& code) {
 
@@ -247,7 +362,6 @@ namespace Flux
 			}
 
 			static bool IsDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR aSurface) {
-				QueueFamilyIndices indices = findQueueFamilies(device, aSurface);
 
 				bool extensionsSupported = CheckDeviceExtensionSupport(device);
 
@@ -260,7 +374,7 @@ namespace Flux
 				VkPhysicalDeviceFeatures supportedFeatures;
 				vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
-				return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+				return extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 			}
 
 			static VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* aWindow) {
@@ -300,31 +414,6 @@ namespace Flux
 				}
 			}
 
-			bool checkValidationLayerSupport() {
-				uint32_t layerCount;
-				vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-				std::vector<VkLayerProperties> availableLayers(layerCount);
-				vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-				for (const char* layerName : Flux::Gfx::validationLayers) {
-					bool layerFound = false;
-
-					for (const auto& layerProperties : availableLayers) {
-						if (strcmp(layerName, layerProperties.layerName) == 0) {
-							layerFound = true;
-							break;
-						}
-					}
-
-					if (!layerFound) {
-						return false;
-					}
-				}
-
-				return true;
-			}
-
 			bool HasStencilComponent(VkFormat format) {
 				return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 			}
@@ -355,16 +444,20 @@ namespace Flux
 
 			static void CreateLogicalDevice(std::shared_ptr<RenderContext> aContext, VkSurfaceKHR aSurface)
 			{
-				QueueFamilyIndices indices = findQueueFamilies(aContext->mDevice->mPhysicalDevice, aSurface);
+				aContext->mDevice->queueFamilies = findQueueFamilies(aContext->mDevice->mPhysicalDevice, aSurface);
 
 				std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-				std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+				std::set<std::pair<uint32_t, bool>> uniqueQueueFamilies = {
+					aContext->mDevice->queueFamilies.graphicsFamily.value(),
+					aContext->mDevice->queueFamilies.presentFamily.value(),
+					aContext->mDevice->queueFamilies.computeFamily.value(),
+					aContext->mDevice->queueFamilies.transferFamily.value() };
 
 				float queuePriority = 1.0f;
-				for (uint32_t queueFamily : uniqueQueueFamilies) {
+				for (const auto& queueFamily : uniqueQueueFamilies) {
 					VkDeviceQueueCreateInfo queueCreateInfo{};
 					queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-					queueCreateInfo.queueFamilyIndex = queueFamily;
+					queueCreateInfo.queueFamilyIndex = queueFamily.first;
 					queueCreateInfo.queueCount = 1;
 					queueCreateInfo.pQueuePriorities = &queuePriority;
 					queueCreateInfos.push_back(queueCreateInfo);
@@ -380,11 +473,6 @@ namespace Flux
 				features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
 				features.features.samplerAnisotropy = VK_TRUE;
 				features.pNext = &stencilFeatures;
-
-
-
-
-
 
 				VkDeviceCreateInfo createInfo{};
 				createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -410,7 +498,6 @@ namespace Flux
 					throw std::runtime_error("failed to create logical device!");
 				}
 
-				aContext->mDevice->queueFamilies = indices;
 
 			}
 
@@ -453,6 +540,8 @@ namespace Flux
 				return true;
 			}
 
+
+
 			static void CreateSurface()
 			{
 
@@ -469,15 +558,31 @@ namespace Flux
 
 				int i = 0;
 				for (const auto& queueFamily : queueFamilies) {
-					if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-						indices.graphicsFamily = i;
+
+					VkQueueFlags tQueueFlags = queueFamily.queueFlags;
+					bool graphicsQueueFlag = (tQueueFlags & VK_QUEUE_GRAPHICS_BIT) ? TRUE : FALSE;
+					bool computeQueueFlag = (tQueueFlags & VK_QUEUE_COMPUTE_BIT) ? TRUE : FALSE;
+					bool transferQueueFlag = (tQueueFlags & VK_QUEUE_TRANSFER_BIT) ? TRUE : FALSE;
+
+					if (graphicsQueueFlag) {
+						indices.graphicsFamily = std::optional < std::pair<uint32_t, bool>>({ i, true});
+						indices.presentFamily = std::optional < std::pair<uint32_t, bool>>({ i, true });
 					}
+
+					if (!graphicsQueueFlag && computeQueueFlag) {
+						indices.computeFamily = std::optional < std::pair<uint32_t, bool>>({ i, true });
+					}
+
+					if (!graphicsQueueFlag && !computeQueueFlag && transferQueueFlag) {
+						indices.transferFamily = std::optional < std::pair<uint32_t, bool>>({ i, true });
+					}
+
 
 					VkBool32 presentSupport = false;
 					vkGetPhysicalDeviceSurfaceSupportKHR(device, i, aSurface, &presentSupport);
 
 					if (presentSupport) {
-						indices.presentFamily = i;
+						indices.presentFamily = std::optional < std::pair<uint32_t, bool>>({ i, true });
 					}
 
 					if (indices.isComplete()) {
@@ -702,8 +807,8 @@ namespace Flux
 				createInfo.imageArrayLayers = 1;
 				createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-				QueueFamilyIndices indices = findQueueFamilies(aContext->mDevice->mPhysicalDevice, aContext->surface);
-				uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+				const QueueFamilyIndices& indices = aContext->mDevice->queueFamilies;
+				uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value().first, indices.presentFamily.value().first };
 
 				if (indices.graphicsFamily != indices.presentFamily) {
 					createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -852,6 +957,8 @@ namespace Flux
 				tRenderContext->mDevice = std::make_shared<GraphicsDevice>();
 
 
+				std::vector<const char*> layers;
+
 				if (aEnableDebug && !CheckValidationLayerSupport()) {
 					throw std::runtime_error("validation layers requested, but not available!");
 				}
@@ -873,6 +980,7 @@ namespace Flux
 				createInfo.ppEnabledExtensionNames = extensions.data();
 
 				VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
+
 				if (tRenderContext->debugMode) {
 					createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 					createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -931,30 +1039,65 @@ namespace Flux
 
 				std::shared_ptr<Queue> tQueue = std::make_shared<Queue>();
 
+				// Select the correct pair to use
+				std::optional<std::pair<uint32_t, bool>> indexPair;
 				switch (aQueueDesc->mType)
 				{
 				case eQueueType::QUEUE_TYPE_GRAPHICS:
-					tQueue->mQueueIndex = aRenderContext->mDevice->queueFamilies.graphicsFamily.value();
+					indexPair = aRenderContext->mDevice->queueFamilies.graphicsFamily;
 					break;
 				case eQueueType::QUEUE_TYPE_PRESENT:
-					tQueue->mQueueIndex = aRenderContext->mDevice->queueFamilies.presentFamily.value();
+					indexPair = aRenderContext->mDevice->queueFamilies.graphicsFamily;
 					break;
 				case eQueueType::QUEUE_TYPE_COMPUTE:
-					assert(true); // not implemented yet
+					indexPair = aRenderContext->mDevice->queueFamilies.graphicsFamily;
 					break;
 				case eQueueType::QUEUE_TYPE_TRANSFER:
-					assert(true); // not implemented yet
+					indexPair = aRenderContext->mDevice->queueFamilies.graphicsFamily;
 					break;
 
 				}
+
+				// Check if pair exists
+				if (!indexPair.has_value())
+				{
+					std::cout << "Requested queue type is not available on this device" << std::endl;
+					return nullptr;
+				}
+				// Check if pair is not already in use
+				if (indexPair.value().second == false)
+				{
+					std::cout << "Requested queue type is already in use, currently only 1 queue per type supported" << std::endl;
+					return nullptr;
+				}
+
+				tQueue->mQueueIndex = indexPair.value().first;
+				indexPair.value().second = false;
+
 
 				vkGetDeviceQueue(aRenderContext->mDevice->mDevice, tQueue->mQueueIndex, 0, &tQueue->mVkQueue);
 
 				return tQueue;
 			}
 
-			static void DestroyQueue(std::shared_ptr<QueueCreateDesc> aQueue)
+			static void DestroyQueue(std::shared_ptr<RenderContext> aContext, std::shared_ptr<Queue> aQueue)
 			{
+				// Select the correct pair to use
+				switch (aQueue->mType)
+				{
+				case eQueueType::QUEUE_TYPE_GRAPHICS:
+					aContext->mDevice->queueFamilies.graphicsFamily.value().second = true;
+					break;
+				case eQueueType::QUEUE_TYPE_PRESENT:
+					aContext->mDevice->queueFamilies.presentFamily.value().second = true;
+					break;
+				case eQueueType::QUEUE_TYPE_COMPUTE:
+					aContext->mDevice->queueFamilies.computeFamily.value().second = true;
+					break;
+				case eQueueType::QUEUE_TYPE_TRANSFER:
+					aContext->mDevice->queueFamilies.transferFamily.value().second = true;
+					break;
+				}
 
 			}
 
@@ -1039,7 +1182,12 @@ namespace Flux
 				for (int i = 0; i < aRenderTargetDesc->mTargets.size(); ++i)
 				{
 					tTextures.push_back(
-						CreateTexture(aRendererContext, aDevice->mDevice, aQueue->mVkQueue, aPool, aAllocator, aRenderTargetDesc->mWidth, aRenderTargetDesc->mHeight, 1, aRenderTargetDesc->mTargets[i].format, VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT));
+						CreateTexture(aRendererContext, aDevice->mDevice, aQueue->mVkQueue, aPool, aAllocator, aRenderTargetDesc->mWidth, aRenderTargetDesc->mHeight, 1, aRenderTargetDesc->mTargets[i].format, VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+							VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+							VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+							VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT |
+							VkImageUsageFlagBits::VK_IMAGE_USAGE_STORAGE_BIT,
+							VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT));
 
 					tTextures[i]->mFormat = aRenderTargetDesc->mTargets[i].format;
 				}

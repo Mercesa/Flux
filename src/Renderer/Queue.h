@@ -8,10 +8,10 @@ namespace Flux
 	{
 		enum eQueueType
 		{
-			QUEUE_TYPE_GRAPHICS = 1,
-			QUEUE_TYPE_PRESENT = 1 << 1,
-			QUEUE_TYPE_TRANSFER = 1 << 2,
-			QUEUE_TYPE_COMPUTE = 1 << 3,
+			QUEUE_TYPE_GRAPHICS = 0,
+			QUEUE_TYPE_PRESENT = 1,
+			QUEUE_TYPE_TRANSFER = 2,
+			QUEUE_TYPE_COMPUTE = 3,
 			MAX_QUEUE_TYPE
 		};
 
@@ -23,6 +23,8 @@ namespace Flux
 		struct Queue {
 			eQueueType mType;
 
+
+			// Vulkan
 			uint32_t mQueueIndex;
 			VkQueue mVkQueue;
 		};

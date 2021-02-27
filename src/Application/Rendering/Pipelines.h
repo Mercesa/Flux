@@ -45,12 +45,42 @@ VkShaderStageFlagBits ConvertShaderToVkShaderStageBit(Flux::ShaderTypes aType)
 {
     switch (aType)
     {
-    case Flux::ShaderTypes::eVertex:
-        return VK_SHADER_STAGE_VERTEX_BIT;
+	case Flux::ShaderTypes::eVertex:
+		return VK_SHADER_STAGE_VERTEX_BIT;
+		break;
+	case Flux::ShaderTypes::eFragment:
+		return VK_SHADER_STAGE_FRAGMENT_BIT;
+		break;
+	case Flux::ShaderTypes::eGeometry:
+		return VK_SHADER_STAGE_GEOMETRY_BIT;
+		break;
+	case Flux::ShaderTypes::eTessellationControl:
+		return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+		break;
+	case Flux::ShaderTypes::eTessellationEval:
+		return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+		break;
+	case Flux::ShaderTypes::eCompute:
+		return VK_SHADER_STAGE_COMPUTE_BIT;
+		break;
+	case Flux::ShaderTypes::eRayGen:
+		return VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+		break;
+    case Flux::ShaderTypes::eRayMiss:
+        return VK_SHADER_STAGE_MISS_BIT_KHR;
         break;
-    case Flux::ShaderTypes::eFragment:
-        return VK_SHADER_STAGE_FRAGMENT_BIT;
-        break;
+	case Flux::ShaderTypes::eRayClosestHit:
+		return VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+		break;
+	case Flux::ShaderTypes::eRayAnyHit:
+		return VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+		break;
+	case Flux::ShaderTypes::eRayIntersection:
+		return VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
+		break;
+	case Flux::ShaderTypes::eRayCallable:
+		return VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+		break;
 
     default:
         VkShaderStageFlagBits(0);
@@ -181,6 +211,32 @@ static VkPipeline CustomRendererCreateGraphicsPipelineForState(
     {
         vkDestroyShaderModule(aContext->mDevice->mDevice, shaderModule, nullptr);
     }
+
+    return tPipeline;
+}
+
+VkPipeline CreateComputePipeline(std::shared_ptr<RenderContext> aContext, VkPipelineLayout pipelineLayout, std::string aShaderPath)
+{
+
+    VkPipeline tPipeline;
+
+    auto shaderCode = Flux::Common::ReadFile(aShaderPath);
+    VkShaderModule shaderModule = Flux::Gfx::Renderer::CreateShaderModule(aContext->mDevice->mDevice, shaderCode);
+
+    VkPipelineShaderStageCreateInfo shaderStageInfo{};
+    shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    shaderStageInfo.stage = ConvertShaderToVkShaderStageBit(ShaderTypes::eCompute);
+    shaderStageInfo.module = shaderModule;
+    shaderStageInfo.pName = "main";
+
+    VkComputePipelineCreateInfo pipelineInfo{};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    pipelineInfo.stage = shaderStageInfo;
+    pipelineInfo.layout = pipelineLayout;
+
+    vkCreateComputePipelines(aContext->mDevice->mDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &tPipeline);
+
+    vkDestroyShaderModule(aContext->mDevice->mDevice, shaderModule, nullptr);
 
     return tPipeline;
 }

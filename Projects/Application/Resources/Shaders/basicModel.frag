@@ -78,7 +78,7 @@ void main() {
         result += (attenuation + diffuse * attenuation + specular * attenuation) * albedo.rgb;
     }
 
-    //vec3 color = applyFog(result, viewDistance, 0.005);
+    vec3 color = applyFog(result, viewDistance, 0.0005);
 
-    outColor = vec4(result.rgb, 1.0);
+    outColor = vec4(color.rgb, 1.0);
 }

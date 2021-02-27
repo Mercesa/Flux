@@ -187,5 +187,8 @@
       <Filter>Resources\Shaders</Filter>
     </None>
     <None Include="ClassDiagram.cd" />
+    <None Include="Resources\Shaders\postfx.comp">
+      <Filter>Resources\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

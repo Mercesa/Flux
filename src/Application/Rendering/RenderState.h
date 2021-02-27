@@ -9,7 +9,18 @@ namespace Flux
 enum class ShaderTypes
 {
 	eVertex,
-	eFragment
+	eFragment,
+	eGeometry,
+	eTessellationControl,
+	eTessellationEval,
+	eCompute,
+	eRayGen,
+	eRayClosestHit,
+	eRayMiss,
+	eRayAnyHit,
+	eRayIntersection,
+	eRayCallable
+
 };
 
 enum class FrontFace

@@ -11,14 +11,21 @@ namespace Flux
 	namespace Gfx
 	{
 
+		// For now only support for 1 queue per type
+		// The boolean will be set to true when used and to false when removed
 		struct QueueFamilyIndices {
-			std::optional<uint32_t> graphicsFamily;
-			std::optional<uint32_t> presentFamily;
+			std::optional<std::pair<uint32_t, bool>> graphicsFamily;
+			std::optional<std::pair<uint32_t, bool>> presentFamily;
+			std::optional<std::pair<uint32_t, bool>> transferFamily;
+			std::optional<std::pair<uint32_t, bool>> computeFamily;
+
 
 			bool isComplete() {
-				return graphicsFamily.has_value() && presentFamily.has_value();
+				return graphicsFamily.has_value() && presentFamily.has_value() && transferFamily.has_value() && computeFamily.has_value();
 			}
 		};
+
+		struct QueueData;
 
 		struct GraphicsDevice
 		{
@@ -28,6 +35,10 @@ namespace Flux
 			VkDevice mDevice;
 			std::string mDeviceName;
 			QueueFamilyIndices queueFamilies;
+
+
+
+
 		};
 	}
 

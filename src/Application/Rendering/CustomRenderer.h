@@ -45,7 +45,7 @@ constexpr bool FORCE_DEBUG = true;
 
 
 #ifdef NDEBUG
-const bool enableValidationLayers = true;
+const bool enableValidationLayers = false;
 #else
 const bool enableValidationLayers = true;
 #endif
@@ -89,7 +89,14 @@ namespace Flux
 
 		LightData mLightData;
 
+		struct ComputeDataPostfx
+		{
+			VkPipelineLayout pipelineLayout;
+			VkPipeline pipeline;
+			VkDescriptorSet descriptorset;
+			VkDescriptorSetLayout descriptorSetLayout;
 
+		} mComputeDataPostfx;
 
 		void Run() {
 			InitVulkan();
@@ -120,6 +127,7 @@ namespace Flux
 		std::vector<VkFence> inFlightFences;
 		std::vector<VkFence> imagesInFlight;
 		size_t currentFrame = 0;
+
 
 		std::vector<std::shared_ptr<Gfx::BufferGPU>> mUniformBuffersCamera;
 		std::vector<std::shared_ptr<Gfx::BufferGPU>> mSceneBuffers;
