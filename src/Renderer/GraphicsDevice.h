@@ -36,9 +36,6 @@ namespace Flux
 			std::string mDeviceName;
 			QueueFamilyIndices queueFamilies;
 
-
-
-
 		};
 	}
 
