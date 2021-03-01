@@ -8,7 +8,8 @@ namespace Flux
 {
 	namespace Common
 	{
-		static std::vector<char> ReadFile(const std::string& filename) {
+		template <class T>
+		static std::vector<T> ReadFile(const std::string& filename) {
 			std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
 			if (!file.is_open()) {
@@ -16,13 +17,17 @@ namespace Flux
 			}
 
 			size_t fileSize = (size_t)file.tellg();
-			std::vector<char> buffer(fileSize);
+
+			std::vector<char> bufferChar(fileSize);
+			std::vector<T> buffer;
 
 			file.seekg(0);
-			file.read(buffer.data(), fileSize);
+			file.read(bufferChar.data(), fileSize);
 
 			file.close();
 
+
+			buffer.assign(bufferChar.begin(), bufferChar.end());
 			return buffer;
 		}
 	}

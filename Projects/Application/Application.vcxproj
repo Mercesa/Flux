@@ -198,7 +198,6 @@
     <ClCompile Include="..\..\src\Application\Scene\iScene.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ClassDiagram.cd" />
     <None Include="Resources\Shaders\basic.frag" />
     <None Include="Resources\Shaders\basic.vert" />
     <None Include="Resources\Shaders\basicModel.frag" />

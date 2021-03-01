@@ -4,24 +4,10 @@
 #include <string>
 #include <optional>
 
+#include "Renderer/Shader.h"
+
 namespace Flux
 {
-enum class ShaderTypes
-{
-	eVertex,
-	eFragment,
-	eGeometry,
-	eTessellationControl,
-	eTessellationEval,
-	eCompute,
-	eRayGen,
-	eRayClosestHit,
-	eRayMiss,
-	eRayAnyHit,
-	eRayIntersection,
-	eRayCallable
-
-};
 
 enum class FrontFace
 {
@@ -49,7 +35,7 @@ struct RasterizerState
 
 struct RenderState
 {
-	std::vector<std::pair<ShaderTypes, std::string>> shaders;
+	std::vector<std::pair<Flux::Gfx::ShaderTypes, std::string>> shaders;
 	RasterizerState drawState;
 	std::optional<uint32_t> stateID;
 

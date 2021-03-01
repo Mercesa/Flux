@@ -18,6 +18,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CommonTest", "Projects\CommonTest\CommonTest.vcxproj", "{8E019F1C-17D5-41EF-BE3C-035B6608B198}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RendererTest", "Projects\RendererTest\RendererTest.vcxproj", "{ED5E0B3F-9FDC-4B77-9B7D-EF596F8F67B5}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8AFBE247-EA35-4827-A759-8021BACD1027} = {8AFBE247-EA35-4827-A759-8021BACD1027}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

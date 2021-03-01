@@ -41,44 +41,44 @@ static VkFrontFace ConvertFrontFaceToVkFaceBit(Flux::FrontFace aType)
     }
 }
 
-VkShaderStageFlagBits ConvertShaderToVkShaderStageBit(Flux::ShaderTypes aType)
+VkShaderStageFlagBits ConvertShaderToVkShaderStageBit(Flux::Gfx::ShaderTypes aType)
 {
     switch (aType)
     {
-	case Flux::ShaderTypes::eVertex:
+    case Flux::Gfx::ShaderTypes::eVertex:
 		return VK_SHADER_STAGE_VERTEX_BIT;
 		break;
-	case Flux::ShaderTypes::eFragment:
+	case Flux::Gfx::ShaderTypes::eFragment:
 		return VK_SHADER_STAGE_FRAGMENT_BIT;
 		break;
-	case Flux::ShaderTypes::eGeometry:
+	case Flux::Gfx::ShaderTypes::eGeometry:
 		return VK_SHADER_STAGE_GEOMETRY_BIT;
 		break;
-	case Flux::ShaderTypes::eTessellationControl:
+	case Flux::Gfx::ShaderTypes::eTessellationControl:
 		return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 		break;
-	case Flux::ShaderTypes::eTessellationEval:
+	case Flux::Gfx::ShaderTypes::eTessellationEval:
 		return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 		break;
-	case Flux::ShaderTypes::eCompute:
+	case Flux::Gfx::ShaderTypes::eCompute:
 		return VK_SHADER_STAGE_COMPUTE_BIT;
 		break;
-	case Flux::ShaderTypes::eRayGen:
+	case Flux::Gfx::ShaderTypes::eRayGen:
 		return VK_SHADER_STAGE_RAYGEN_BIT_KHR;
 		break;
-    case Flux::ShaderTypes::eRayMiss:
+    case Flux::Gfx::ShaderTypes::eRayMiss:
         return VK_SHADER_STAGE_MISS_BIT_KHR;
         break;
-	case Flux::ShaderTypes::eRayClosestHit:
+	case Flux::Gfx::ShaderTypes::eRayClosestHit:
 		return VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
 		break;
-	case Flux::ShaderTypes::eRayAnyHit:
+	case Flux::Gfx::ShaderTypes::eRayAnyHit:
 		return VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
 		break;
-	case Flux::ShaderTypes::eRayIntersection:
+	case Flux::Gfx::ShaderTypes::eRayIntersection:
 		return VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
 		break;
-	case Flux::ShaderTypes::eRayCallable:
+	case Flux::Gfx::ShaderTypes::eRayCallable:
 		return VK_SHADER_STAGE_CALLABLE_BIT_KHR;
 		break;
 
@@ -101,7 +101,7 @@ static VkPipeline CustomRendererCreateGraphicsPipelineForState(
     // Prepare the pipeline stages
     for (auto& e : aRenderState.shaders)
     {
-        auto shaderCode = Flux::Common::ReadFile(e.second);
+        auto shaderCode = Flux::Common::ReadFile<char>(e.second);
 
         VkShaderModule shaderModule = Flux::Gfx::Renderer::CreateShaderModule(aContext->mDevice->mDevice, shaderCode);
 
@@ -220,7 +220,7 @@ VkPipeline CreateComputePipeline(std::shared_ptr<RenderContext> aContext, VkPipe
 
     VkPipeline tPipeline;
 
-    auto shaderCode = Flux::Common::ReadFile(aShaderPath);
+    auto shaderCode = Flux::Common::ReadFile<char>(aShaderPath);
     VkShaderModule shaderModule = Flux::Gfx::Renderer::CreateShaderModule(aContext->mDevice->mDevice, shaderCode);
 
     VkPipelineShaderStageCreateInfo shaderStageInfo{};

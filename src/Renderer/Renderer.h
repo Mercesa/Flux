@@ -2,9 +2,9 @@
 
 
 /*
+* Some parts of the design and overal structure has been inspired by the The Forge
  * Copyright (c) 2018-2021 The Forge Interactive Inc.
  *
- * Some parts of the design and overal structure has been inspired by the The Forge
  * (see https://github.com/ConfettiFX/The-Forge).
  *
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -539,8 +539,6 @@ namespace Flux
 
 				return true;
 			}
-
-
 
 			static void CreateSurface()
 			{

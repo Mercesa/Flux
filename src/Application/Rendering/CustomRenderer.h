@@ -23,7 +23,6 @@
 
 #include <vk_mem_alloc.h>
 
-#include "Renderer/Reflection.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/TextureVK.h"
 #include "Renderer/BufferGPU.h"

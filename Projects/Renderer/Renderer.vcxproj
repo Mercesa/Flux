@@ -78,12 +78,12 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>$(SolutionDir)External\assimp-master\lib\Debug;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)External\SPIRV-Cross-master\Debug;$(SolutionDir)External\assimp-master\lib\Debug;$(LibraryPath)</LibraryPath>
     <OutDir>$(ProjectDir)lib\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>$(SolutionDir)External\assimp-master\lib\Release;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)External\SPIRV-Cross-master\Release;$(SolutionDir)External\assimp-master\lib\Release;$(LibraryPath)</LibraryPath>
     <OutDir>$(ProjectDir)lib\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -120,7 +120,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions) _CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\SPIRV-Reflect-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir);$(SolutionDir)\External\assimp-master\include;$(SolutionDir)src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir);$(SolutionDir)\External\assimp-master\include;$(SolutionDir)src;$(SolutionDir)External\SPIRV-Cross-master</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -132,7 +132,7 @@
     </Link>
     <Lib>
       <AdditionalLibraryDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\lib-vc2019;$(VK_SDK_PATH)\Lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;spirv-cross-cored.lib;spirv-cross-cppd.lib;spirv-cross-glsld.lib;spirv-cross-reflectd.lib;spirv-cross-utild.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -143,7 +143,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions) _CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\SPIRV-Reflect-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir);$(SolutionDir)\External\assimp-master\include;$(SolutionDir)src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir);$(SolutionDir)\External\assimp-master\include;$(SolutionDir)src;$(SolutionDir)External\SPIRV-Cross-master</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -157,28 +157,26 @@
     </Link>
     <Lib>
       <AdditionalLibraryDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\lib-vc2019;$(VK_SDK_PATH)\Lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;spirv-cross-core.lib;spirv-cross-cpp.lib;spirv-cross-glsl.lib;spirv-cross-reflect.lib;spirv-cross-util.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\External\SPIRV-Reflect-master\spirv_reflect.c" />
     <ClCompile Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.cpp" />
     <ClCompile Include="..\..\src\Renderer\Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\VulkanSDK\1.2.141.2\Include\spirv_cross\spirv_reflect.hpp" />
-    <ClInclude Include="..\..\External\SPIRV-Reflect-master\spirv_reflect.h" />
     <ClInclude Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.h" />
     <ClInclude Include="..\..\src\Renderer\BufferGPU.h" />
     <ClInclude Include="..\..\src\Renderer\DescriptorPool.h" />
     <ClInclude Include="..\..\src\Renderer\GraphicsDevice.h" />
     <ClInclude Include="..\..\src\Renderer\Queue.h" />
-    <ClInclude Include="..\..\src\Renderer\Reflection.h" />
     <ClInclude Include="..\..\src\Renderer\RenderContext.h" />
     <ClInclude Include="..\..\src\Renderer\Renderer.h" />
     <ClInclude Include="..\..\src\Renderer\RenderTarget.h" />
+    <ClInclude Include="..\..\src\Renderer\ShaderReflection.h" />
     <ClInclude Include="..\..\src\Renderer\Swapchain.h" />
     <ClInclude Include="..\..\src\Renderer\TextureVK.h" />
+    <ClInclude Include="Shader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

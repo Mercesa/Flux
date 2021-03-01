@@ -79,8 +79,8 @@ void Flux::FirstScene::Init()
 			tSceneObject->mMaterial->mTextureAssetNormal = mAssetManager->LoadTexture(tPath);
 		}
 
-		tSceneObject->mRenderState.shaders.push_back({ ShaderTypes::eVertex, 		"Resources/Shaders/basicModel.vert.spv" });
-		tSceneObject->mRenderState.shaders.push_back({ ShaderTypes::eFragment, 		"Resources/Shaders/basicModel.frag.spv" });
+		tSceneObject->mRenderState.shaders.push_back({ Flux::Gfx::ShaderTypes::eVertex, 		"Resources/Shaders/basicModel.vert.spv" });
+		tSceneObject->mRenderState.shaders.push_back({ Flux::Gfx::ShaderTypes::eFragment, 		"Resources/Shaders/basicModel.frag.spv" });
 
 		glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(0.05f));
 
@@ -137,8 +137,8 @@ void Flux::FirstScene::Init()
 			tSceneObject->mMaterial->mTextureAssetNormal = mAssetManager->LoadTexture(tPath);
 		}
 
-		tSceneObject->mRenderState.shaders.push_back({ ShaderTypes::eVertex, 		"Resources/Shaders/basicModel.vert.spv" });
-		tSceneObject->mRenderState.shaders.push_back({ ShaderTypes::eFragment, 		"Resources/Shaders/basicModel.frag.spv" });
+		tSceneObject->mRenderState.shaders.push_back({ Flux::Gfx::ShaderTypes::eVertex, 		"Resources/Shaders/basicModel.vert.spv" });
+		tSceneObject->mRenderState.shaders.push_back({ Flux::Gfx::ShaderTypes::eFragment, 		"Resources/Shaders/basicModel.frag.spv" });
 
 		glm::mat4 scaleMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(5.0f));
 		tSceneObject->transform = scaleMatrix;
@@ -190,8 +190,6 @@ void Flux::FirstScene::Update(float aDt)
 	//mLights[0]->position = glm::vec3(0.0f, 6.0f, 0.0f) + glm::vec3(5 * sinf(angle), 0.0f, 0.0f);
 
 	mCamera->ProcessMouseMovement(static_cast<float>(mInput->GetRelMousePos().x), static_cast<float>(mInput->GetRelMousePos().y), true);
-
-
 }
 
 void Flux::FirstScene::Cleanup()

@@ -345,7 +345,7 @@ VkPipeline Flux::CustomRenderer::CreateGraphicsPipelineForState(RenderState stat
     // Prepare the pipeline stages
     for (auto& e : state.shaders)
     {
-        auto shaderCode =  Common::ReadFile(e.second);
+        auto shaderCode =  Common::ReadFile<char>(e.second);
 
         VkShaderModule shaderModule = Renderer::CreateShaderModule(mRenderContext->mDevice->mDevice, shaderCode);
 

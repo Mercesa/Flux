@@ -7,29 +7,14 @@
     <Filter Include="src\External">
       <UniqueIdentifier>{12f5fc36-bd8d-4a6a-8ed1-fb93e13f454c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\External\SpirvReflect">
-      <UniqueIdentifier>{5db63512-1cdd-43b7-9e0a-e5de32815bd4}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\External\SPIRV-Reflect-master\spirv_reflect.c">
-      <Filter>src\External\SpirvReflect</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\Renderer\Renderer.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\External\SPIRV-Reflect-master\spirv_reflect.h">
-      <Filter>src\External\SpirvReflect</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\..\VulkanSDK\1.2.141.2\Include\spirv_cross\spirv_reflect.hpp">
-      <Filter>src\External\SpirvReflect</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\Renderer\Reflection.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\Renderer\Renderer.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -56,6 +41,12 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Renderer\RenderTarget.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Renderer\ShaderReflection.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
