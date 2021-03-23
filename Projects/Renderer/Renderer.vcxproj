@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -163,6 +163,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.cpp" />
     <ClCompile Include="..\..\src\Renderer\Renderer.cpp" />
+    <ClCompile Include="..\..\src\Renderer\ShaderReflection.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.h" />
@@ -173,10 +174,11 @@
     <ClInclude Include="..\..\src\Renderer\RenderContext.h" />
     <ClInclude Include="..\..\src\Renderer\Renderer.h" />
     <ClInclude Include="..\..\src\Renderer\RenderTarget.h" />
+    <ClInclude Include="..\..\src\Renderer\RootSignature.h" />
+    <ClInclude Include="..\..\src\Renderer\Shader.h" />
     <ClInclude Include="..\..\src\Renderer\ShaderReflection.h" />
     <ClInclude Include="..\..\src\Renderer\Swapchain.h" />
     <ClInclude Include="..\..\src\Renderer\TextureVK.h" />
-    <ClInclude Include="Shader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

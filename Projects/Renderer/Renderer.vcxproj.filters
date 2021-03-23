@@ -13,6 +13,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.cpp" />
+    <ClCompile Include="..\..\src\Renderer\ShaderReflection.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\Renderer\Renderer.h">
@@ -46,7 +49,10 @@
     <ClInclude Include="..\..\src\Renderer\ShaderReflection.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="Shader.h">
+    <ClInclude Include="..\..\src\Renderer\RootSignature.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Renderer\Shader.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
