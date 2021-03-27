@@ -90,10 +90,8 @@ namespace Flux
 
 		struct ComputeDataPostfx
 		{
-			VkPipelineLayout pipelineLayout;
 			VkPipeline pipeline;
 			VkDescriptorSet descriptorset;
-			VkDescriptorSetLayout descriptorSetLayout;
 
 		} mComputeDataPostfx;
 
@@ -253,6 +251,7 @@ namespace Flux
 
 		std::shared_ptr<Flux::Gfx::RenderTarget> mRenderTargetScene;
 		std::shared_ptr<Flux::Gfx::RenderTarget> mRenderTargetFinal;
+		std::shared_ptr<Flux::Gfx::RootSignature> mRootSignatureCompute;
 
 
 	};

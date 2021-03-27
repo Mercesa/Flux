@@ -3,27 +3,14 @@
 #include "vulkan/vulkan.h"
 #include "Renderer/ShaderReflection.h"
 
+#include "Renderer/GraphicEnums.h"
+
 #include <string>
 
 namespace Flux
 {
 	namespace Gfx
 	{
-		enum class ShaderTypes
-		{
-			eVertex,
-			eFragment,
-			eGeometry,
-			eTessellationControl,
-			eTessellationEval,
-			eCompute,
-			eRayGen,
-			eRayClosestHit,
-			eRayMiss,
-			eRayAnyHit,
-			eRayIntersection,
-			eRayCallable
-		};
 
 		struct ShaderCreateDesc
 		{
@@ -33,11 +20,15 @@ namespace Flux
 
 		struct Shader
 		{
+			Shader() : mShadertype(ShaderTypes::eUnknownShaderType), mEntryPoint(""), mFilePath("")
+			{
+
+			}
 			// General code
 			ShaderTypes mShadertype;
 			std::string mEntryPoint;
 			std::string mFilePath;
-			ShaderReflection::ShaderResourceReflection mReflectionData;
+			ShaderReflection::ShaderReflectionData mReflectionData;
 
 			// Vulkan
 			VkShaderModule mShaderModule;

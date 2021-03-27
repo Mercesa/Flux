@@ -3,14 +3,18 @@
 #include <cassert>
 #include <vector>
 #include <string>
+#include <memory>
 
 #include "vulkan/vulkan.h"
 
+#include "GraphicEnums.h"
 
 namespace Flux
 {
 	namespace Gfx
 	{
+		struct Shader;
+
 		namespace ShaderReflection
 		{
 			enum class ShaderResourceType
@@ -26,25 +30,33 @@ namespace Flux
 				ePushConstantBuffer,
 				eAccelerationStructure,
 				eSeparateImages,
-				eSeparateSamplers
+				eSeparateSamplers,
+				eUnknownResource
 			};
 
 			struct ShaderResourceReflection
 			{
+				ShaderResourceReflection() : mBindingNumber(-1), mSetNumber(-1), mSize(0), mName(""), mType(ShaderResourceType::eUnknownResource), mShaderAccess(ShaderTypes::eUnknownShaderType){}
+
 				int32_t mBindingNumber;
 				int32_t mSetNumber;
+				uint32_t mSize;
 				std::string mName;
 				ShaderResourceType mType;
+				uint32_t mShaderAccess;
 			};
 
-			struct ShaderReflection
+			struct ShaderReflectionData
 			{
 				std::vector<ShaderResourceReflection> mResources;
 				std::string mEntryPoint;
 				uint32_t mThreadGroups[3]; // X Y Z
 			};
 
-			ShaderReflection Reflect(std::vector<char> aSpvbinary);
+			ShaderReflectionData Reflect(std::vector<char> aSpvbinary);
+
+			// Validates a bunch of shaders to see if their resources are overlapping and not causing conflicts
+			std::vector<ShaderResourceReflection> ValidateAndMergeShaderResources(const std::vector<std::shared_ptr<Flux::Gfx::Shader>> aShaders);
 		}
 	}
 }

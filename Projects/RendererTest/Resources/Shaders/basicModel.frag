@@ -15,11 +15,12 @@ layout(location = 0) out vec4 outColor;
 layout(set = 1, binding = 0) uniform texture2D textureAlbedo;
 layout(set = 1, binding = 1) uniform texture2D textureSpecular;
 layout(set = 1, binding = 2) uniform texture2D textureNormal;
+
 layout(set = 1, binding = 3) uniform sampler basicSampler;
 
 
 layout(std140, set = 0, binding = 0) uniform block {CameraData camera;};
-layout (set = 0, binding = 1, std140) uniform Lights {
+layout (set = 0, binding = 1) uniform Lights {
   Light lights[1024];
 };
 

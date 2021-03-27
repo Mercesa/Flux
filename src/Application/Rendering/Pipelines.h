@@ -5,6 +5,7 @@
 #include "Common/FileHandling/FileReadUtility.h"
 
 #include "Application/Rendering/RenderState.h"
+#include "Renderer/GraphicEnums.h"
 
 static VkCullModeFlagBits ConvertCullModeToVkCullBit(Flux::CullModes aType)
 {

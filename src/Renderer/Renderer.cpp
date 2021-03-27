@@ -3,6 +3,87 @@
 using namespace Flux;
 
 using namespace Flux::Gfx;
+using namespace Flux::Gfx::ShaderReflection;
+
+
+#include <map>
+
+inline VkShaderStageFlags ConvertShaderStageToVkStage(ShaderTypes aShaderAccessFlags)
+{
+
+	uint32_t shaderFlags = VkShaderStageFlags(0);
+
+	switch (aShaderAccessFlags)
+	{
+	if(aShaderAccessFlags & eVertex)
+		shaderFlags |= VK_SHADER_STAGE_VERTEX_BIT;
+	if(aShaderAccessFlags & eFragment)
+		shaderFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+	if(aShaderAccessFlags & eGeometry)
+		shaderFlags |= VK_SHADER_STAGE_GEOMETRY_BIT;
+	if(aShaderAccessFlags & eTessellationControl)
+		shaderFlags |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+	if(aShaderAccessFlags & eTessellationEval)
+		shaderFlags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+	if(aShaderAccessFlags & eCompute)
+		shaderFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
+	if(aShaderAccessFlags & eRayGen)
+		shaderFlags |= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+	if(aShaderAccessFlags & eRayClosestHit)
+		shaderFlags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+	if(aShaderAccessFlags & eRayMiss)
+		shaderFlags |= VK_SHADER_STAGE_MISS_BIT_KHR;
+	if(aShaderAccessFlags & eRayAnyHit)
+		shaderFlags |= VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+	if(aShaderAccessFlags & eRayIntersection)
+		shaderFlags |= VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
+	if(aShaderAccessFlags & eRayCallable)
+		shaderFlags |= VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+	default:
+		return VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+	}
+
+	return VkShaderStageFlags(shaderFlags);
+}
+
+inline VkDescriptorType ConvertShaderResourceToDescriptorType(ShaderResourceType aResourceFlags)
+{
+	switch (aResourceFlags)
+	{
+	case ShaderResourceType::eUniform_buffer:
+		return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		break;
+	case ShaderResourceType::eStorage_buffer:
+		return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		break;
+	case ShaderResourceType:: eSubpass_inputs:
+		return VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		break;
+	case ShaderResourceType:: eStorage_images:
+		return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		break;
+	case ShaderResourceType:: eSampled_images:
+		return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		break;
+	case ShaderResourceType:: eAccelerationStructure:
+		return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+		break;
+	case ShaderResourceType:: eSeparateImages:
+		return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+		break;
+	case ShaderResourceType:: eSeparateSamplers:
+		return VK_DESCRIPTOR_TYPE_SAMPLER;
+		break;
+	case ShaderResourceType::eAtomic_counters:
+	case ShaderResourceType::eUnknownResource:
+	case ShaderResourceType::eStage_input:
+	case ShaderResourceType::eStage_output:
+	case ShaderResourceType::ePushConstantBuffer:
+	default:
+		return VK_DESCRIPTOR_TYPE_MAX_ENUM;
+		break;
+	}
+}
 
 
 VkCommandBuffer Renderer::BeginSingleTimeCommands(VkDevice aDevice, VkCommandPool aCmdPool) {
@@ -210,6 +291,101 @@ void Flux::Gfx::Renderer::CreateBuffer(VkDevice aDevice, VmaAllocator aAllocator
 	allocInfo.usage = properties;
 
 	vmaCreateBuffer(aAllocator, &bufferInfo, &allocInfo, &buffer, &bufferMemory, nullptr);
+}
+
+std::shared_ptr<RootSignature> Flux::Gfx::Renderer::CreateRootSignature(std::shared_ptr<RenderContext> aRendererContext, const RootSignatureCreateDesc* const aRootSignatureDesc)
+{
+	// Check if the shader that is given in the description is a valid shader
+	// Combine shader resources (we can do some error checking here)
+	// Create descriptor set layouts and descriptor sets from the root signature
+
+
+
+	// We don't accept root signatures that have 0 shaders
+	if (aRootSignatureDesc->mShaders.size() == 0)
+	{
+		return nullptr;
+	}
+
+	{
+		for (const auto& shader : aRootSignatureDesc->mShaders)
+		{
+			// Shader is invalid if it doesn't have an entry point and is an unknown type
+			if (shader->mEntryPoint.length() == 0 || shader->mShadertype == ShaderTypes::eUnknownShaderType)
+			{
+				return nullptr;
+			}
+		}
+	}
+
+	std::shared_ptr<RootSignature> tRootSignature = std::make_shared<RootSignature>();
+
+
+	// Merge the shader resources from all the shaders
+	tRootSignature->mRootSignatureResources = ShaderReflection::ValidateAndMergeShaderResources(aRootSignatureDesc->mShaders);
+
+	// map to hold the descriptors
+	std::map<int32_t, std::vector<Flux::Gfx::ShaderReflection::ShaderResourceReflection>> descriptorMap;
+
+	for (auto& shaderResource : tRootSignature->mRootSignatureResources)
+	{
+		descriptorMap[shaderResource.mSetNumber].push_back(shaderResource);
+	}
+
+
+	for (auto& set : descriptorMap)
+	{
+		std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
+
+		for (auto& binding : set.second)
+		{
+			VkDescriptorSetLayoutBinding descriptorBinding{};
+			descriptorBinding.binding = binding.mBindingNumber;
+			descriptorBinding.descriptorType = ConvertShaderResourceToDescriptorType(binding.mType);
+			descriptorBinding.descriptorCount = binding.mSize;
+			descriptorBinding.stageFlags = ConvertShaderStageToVkStage(Flux::Gfx::ShaderTypes(binding.mShaderAccess));
+			descriptorBinding.pImmutableSamplers = nullptr;
+
+			descriptorSetLayoutBindings.push_back(descriptorBinding);
+		}
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.bindingCount = static_cast<uint32_t>(descriptorSetLayoutBindings.size());
+		layoutInfo.pBindings = descriptorSetLayoutBindings.data();
+
+		VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+
+		if (vkCreateDescriptorSetLayout(aRendererContext->mDevice->mDevice, &layoutInfo, nullptr, &descriptorSetLayout))
+		{
+			throw std::runtime_error("failed to create descriptor set layout!");
+		}
+
+		tRootSignature->mDescriptorSetLayouts.push_back(descriptorSetLayout);
+	}
+
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.pushConstantRangeCount = 0;
+	pipelineLayoutInfo.setLayoutCount = tRootSignature->mDescriptorSetLayouts.size();
+	pipelineLayoutInfo.pSetLayouts = tRootSignature->mDescriptorSetLayouts.data();
+
+	if (vkCreatePipelineLayout(aRendererContext->mDevice->mDevice, &pipelineLayoutInfo, nullptr, &tRootSignature->mPipelineLayout) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create pipeline layout!");
+	}
+
+	return tRootSignature;
+}
+
+void Flux::Gfx::Renderer::DestroyRootSignature(std::shared_ptr<RenderContext> aRendererContext, std::shared_ptr<RootSignature> aRootSignature)
+{
+	assert(aRootSignature);
+	for (auto& descriptorLayouts : aRootSignature->mDescriptorSetLayouts)
+	{
+		vkDestroyDescriptorSetLayout(aRendererContext->mDevice->mDevice, descriptorLayouts, nullptr);
+	}
+
+	vkDestroyPipelineLayout(aRendererContext->mDevice->mDevice, aRootSignature->mPipelineLayout, nullptr);
 }
 
 

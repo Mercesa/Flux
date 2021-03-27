@@ -16,6 +16,9 @@
     <ClCompile Include="..\..\src\Renderer\ShaderReflection.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Renderer\VulkanDebug.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\Renderer\Renderer.h">
@@ -53,6 +56,15 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Renderer\Shader.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Renderer\GraphicEnums.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Renderer\Pipeline.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Renderer\VulkanDebug.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

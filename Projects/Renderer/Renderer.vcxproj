@@ -120,7 +120,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions) _CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(VK_SDK_PATH)\Include;$(SolutionDir)External\stb-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir);$(SolutionDir)\External\assimp-master\include;$(SolutionDir)src;$(SolutionDir)External\SPIRV-Cross-master</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\glfw-3.3.2.bin.WIN64\include;$(SolutionDir)External\glm;$(SolutionDir)External\stb-master;$(SolutionDir)External\VulkanMemoryAllocator-master\src;$(SolutionDir);$(SolutionDir)\External\assimp-master\include;$(SolutionDir)src;$(SolutionDir)External\SPIRV-Cross-master;$(VK_SDK_PATH)\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -164,12 +164,15 @@
     <ClCompile Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.cpp" />
     <ClCompile Include="..\..\src\Renderer\Renderer.cpp" />
     <ClCompile Include="..\..\src\Renderer\ShaderReflection.cpp" />
+    <ClCompile Include="..\..\src\Renderer\VulkanDebug.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\External\VulkanMemoryAllocator-master\src\VmaUsage.h" />
     <ClInclude Include="..\..\src\Renderer\BufferGPU.h" />
     <ClInclude Include="..\..\src\Renderer\DescriptorPool.h" />
+    <ClInclude Include="..\..\src\Renderer\GraphicEnums.h" />
     <ClInclude Include="..\..\src\Renderer\GraphicsDevice.h" />
+    <ClInclude Include="..\..\src\Renderer\Pipeline.h" />
     <ClInclude Include="..\..\src\Renderer\Queue.h" />
     <ClInclude Include="..\..\src\Renderer\RenderContext.h" />
     <ClInclude Include="..\..\src\Renderer\Renderer.h" />
@@ -179,6 +182,7 @@
     <ClInclude Include="..\..\src\Renderer\ShaderReflection.h" />
     <ClInclude Include="..\..\src\Renderer\Swapchain.h" />
     <ClInclude Include="..\..\src\Renderer\TextureVK.h" />
+    <ClInclude Include="..\..\src\Renderer\VulkanDebug.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

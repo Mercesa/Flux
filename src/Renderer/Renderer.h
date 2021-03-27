@@ -1,6 +1,5 @@
 #pragma once
 
-
 /*
 * Some parts of the design and overal structure has been inspired by the The Forge
  * Copyright (c) 2018-2021 The Forge Interactive Inc.
@@ -37,14 +36,20 @@
 #include "Renderer/GraphicsDevice.h"
 #include "Renderer/RenderContext.h"
 #include "Renderer/RenderTarget.h"
+#include "Renderer/RootSignature.h"
+
+#include "Renderer/VulkanDebug.h"
 
 #include "Swapchain.h"
 #include "GLFW/glfw3.h"
-#include "vulkan/vulkan.h"
+#include <vulkan/vulkan.h>
+
 #include <iostream>
 #include <optional>
 #include <set>
 #include "Renderer.h"
+
+
 
 namespace Flux
 {
@@ -129,13 +134,11 @@ namespace Flux
 //		}
 
 		const std::vector<const char*> validationLayers = {
-	"VK_LAYER_KHRONOS_validation",
+			"VK_LAYER_KHRONOS_validation",
 		};
 
 		const std::vector<const char*> deviceExtensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME
-
-
 		};
 
 		class Texture;
@@ -397,22 +400,22 @@ namespace Flux
 				}
 			}
 
-			static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
-				auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-				if (func != nullptr) {
-					func(instance, debugMessenger, pAllocator);
-				}
-			}
+			//static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
+			//	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+			//	if (func != nullptr) {
+			//		func(instance, debugMessenger, pAllocator);
+			//	}
+			//}
 
-			static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
-				auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-				if (func != nullptr) {
-					return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-				}
-				else {
-					return VK_ERROR_EXTENSION_NOT_PRESENT;
-				}
-			}
+			//static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
+			//	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+			//	if (func != nullptr) {
+			//		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+			//	}
+			//	else {
+			//		return VK_ERROR_EXTENSION_NOT_PRESENT;
+			//	}
+			//}
 
 			bool HasStencilComponent(VkFormat format) {
 				return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
@@ -510,6 +513,7 @@ namespace Flux
 
 				if (aDebug) {
 					extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+					extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 				}
 
 				return extensions;
@@ -602,17 +606,17 @@ namespace Flux
 				createInfo.pfnUserCallback = debugCallback;
 			}
 
-			static void SetupDebugMessenger(std::shared_ptr<RenderContext> aContext)
-			{
-				if (!aContext->debugMode) return;
+			//static void SetupDebugMessenger(std::shared_ptr<RenderContext> aContext)
+			//{
+			//	if (!aContext->debugMode) return;
 
-				VkDebugUtilsMessengerCreateInfoEXT createInfo;
-				populateDebugMessengerCreateInfo(createInfo);
+			//	VkDebugUtilsMessengerCreateInfoEXT createInfo;
+			//	populateDebugMessengerCreateInfo(createInfo);
 
-				if (CreateDebugUtilsMessengerEXT(aContext->instance, &createInfo, nullptr, &aContext->debugMessenger) != VK_SUCCESS) {
-					throw std::runtime_error("failed to set up debug messenger!");
-				}
-			}
+			//	if (CreateDebugUtilsMessengerEXT(aContext->instance, &createInfo, nullptr, &aContext->debugMessenger) != VK_SUCCESS) {
+			//		throw std::runtime_error("failed to set up debug messenger!");
+			//	}
+			//}
 
 			static void CreateImage(std::shared_ptr<RenderContext> aContext, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage properties, VkImage& image, VmaAllocation& imageMemory, uint32_t miplevels)
 			{
@@ -769,6 +773,7 @@ namespace Flux
 				return details;
 			}
 
+			// Swapchain
 			static std::shared_ptr<Swapchain> CreateSwapChain(std::shared_ptr<RenderContext> aContext, GLFWwindow* window)
 			{
 				assert(aContext);
@@ -921,7 +926,6 @@ namespace Flux
 
 				return tSwapChain;
 			}
-
 			static void DestroySwapchain(std::shared_ptr<RenderContext> aContext, std::shared_ptr<Swapchain> aSwapchain)
 			{
 				assert(aSwapchain);
@@ -947,10 +951,11 @@ namespace Flux
 
 			}
 
+			// Render context
 			static std::shared_ptr<RenderContext> CreateRenderContext(std::string aName, bool aEnableDebug, GLFWwindow* aWindow)
 			{
 				std::shared_ptr<RenderContext> tRenderContext = std::make_shared<RenderContext>();
-				tRenderContext->debugMode = true;
+				tRenderContext->debugMode = aEnableDebug;
 
 				tRenderContext->mDevice = std::make_shared<GraphicsDevice>();
 
@@ -1012,16 +1017,16 @@ namespace Flux
 
 				vmaCreateAllocator(&allocatorInfo, &tRenderContext->memoryAllocator);
 
-				SetupDebugMessenger(tRenderContext);
 
+				vks::debug::setupDebugging(tRenderContext->instance, VK_DEBUG_REPORT_INFORMATION_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT, NULL);
+				vks::debugmarker::setup(tRenderContext->mDevice->mDevice);
 				return tRenderContext;
 			}
-
 			static void DestroyRenderContext(std::shared_ptr<RenderContext> aRenderContext)
 			{
-				if (aRenderContext->debugMode) {
-					DestroyDebugUtilsMessengerEXT(aRenderContext->instance, aRenderContext->debugMessenger, nullptr);
-				}
+				//if (aRenderContext->debugMode) {
+				//	DestroyDebugUtilsMessengerEXT(aRenderContext->instance, aRenderContext->debugMessenger, nullptr);
+				//}
 
 				vmaDestroyAllocator(aRenderContext->memoryAllocator);
 				//vkDestroySurfaceKHR(aRenderContext->instance, aRenderContext->surface, nullptr);
@@ -1030,7 +1035,8 @@ namespace Flux
 				vkDestroyInstance(aRenderContext->instance, nullptr);
 			}
 
-			static std::shared_ptr<Queue> CreateQueue(std::shared_ptr<RenderContext> aRenderContext, QueueCreateDesc* const aQueueDesc)
+			// Queue
+			static std::shared_ptr<Queue> CreateQueue(std::shared_ptr<RenderContext> aRenderContext, const QueueCreateDesc* const aQueueDesc)
 			{
 				assert(aRenderContext);
 				assert(aRenderContext->mDevice);
@@ -1077,7 +1083,6 @@ namespace Flux
 
 				return tQueue;
 			}
-
 			static void DestroyQueue(std::shared_ptr<RenderContext> aContext, std::shared_ptr<Queue> aQueue)
 			{
 				// Select the correct pair to use
@@ -1099,7 +1104,8 @@ namespace Flux
 
 			}
 
-			static std::shared_ptr<DescriptorPool> CreateDescriptorPool(std::shared_ptr<RenderContext> aRendererContext, DescriptorPoolCreateDesc* aPoolDesc)
+			// Descriptor pool
+			static std::shared_ptr<DescriptorPool> CreateDescriptorPool(std::shared_ptr<RenderContext> aRendererContext, const DescriptorPoolCreateDesc* const aPoolDesc)
 			{
 				std::shared_ptr<DescriptorPool> tDescriptorPool = std::make_shared<DescriptorPool>();
 
@@ -1132,11 +1138,15 @@ namespace Flux
 
 				return tDescriptorPool;
 			}
-
 			static void DestroyDescriptorPool(std::shared_ptr<RenderContext> aContext, std::shared_ptr<DescriptorPool> aPool)
 			{
 				vkDestroyDescriptorPool(aContext->mDevice->mDevice, aPool->mPool, nullptr);
 			}
+
+			// Root signature
+			static std::shared_ptr<RootSignature> CreateRootSignature(std::shared_ptr<RenderContext> aRendererContext, const RootSignatureCreateDesc* const aRootSignatureDesc);
+			static void DestroyRootSignature(std::shared_ptr<RenderContext> aRendererContext, std::shared_ptr<RootSignature> aRootSignature);
+
 
 			static VkFormat FindSupportedFormat(std::shared_ptr<RenderContext> aContext, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 			{

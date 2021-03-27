@@ -131,39 +131,51 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
 		mRenderTargetFinal = Renderer::CreateRenderTarget(mRenderContext, mRenderContext->mDevice, mQueueGraphics, commandPool, mRenderContext->memoryAllocator, &RTCreateDesc);
 	}
 
+
+    std::shared_ptr<Flux::Gfx::Shader> computeShader = std::make_shared<Flux::Gfx::Shader>();
+    auto codeCompute = Flux::Common::ReadFile<char>("Resources/Shaders/postfx.comp.spv");
+    computeShader->mReflectionData = ShaderReflection::Reflect(codeCompute);
+    computeShader->mEntryPoint = "main";
+    computeShader->mShadertype = ShaderTypes::eCompute;
+
+    RootSignatureCreateDesc rootSigDesc{};
+    rootSigDesc.mShaders.push_back(computeShader);
+
+    mRootSignatureCompute = Renderer::CreateRootSignature(mRenderContext, &rootSigDesc);
+
     // Compute shader
     {
-        VkDescriptorSetLayoutBinding layoutBindingStorageLayoutBindingRead{};
-        layoutBindingStorageLayoutBindingRead.binding = 0;
-        layoutBindingStorageLayoutBindingRead.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        layoutBindingStorageLayoutBindingRead.descriptorCount = 1;
-        layoutBindingStorageLayoutBindingRead.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-        layoutBindingStorageLayoutBindingRead.pImmutableSamplers = nullptr;
+        //VkDescriptorSetLayoutBinding layoutBindingStorageLayoutBindingRead{};
+        //layoutBindingStorageLayoutBindingRead.binding = 0;
+        //layoutBindingStorageLayoutBindingRead.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        //layoutBindingStorageLayoutBindingRead.descriptorCount = 1;
+        //layoutBindingStorageLayoutBindingRead.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        //layoutBindingStorageLayoutBindingRead.pImmutableSamplers = nullptr;
 
-        VkDescriptorSetLayoutBinding layoutBindingStorageLayoutBindingWrite{};
-        layoutBindingStorageLayoutBindingWrite.binding = 1;
-        layoutBindingStorageLayoutBindingWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        layoutBindingStorageLayoutBindingWrite.descriptorCount = 1;
-        layoutBindingStorageLayoutBindingWrite.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-        layoutBindingStorageLayoutBindingWrite.pImmutableSamplers = nullptr;
+        //VkDescriptorSetLayoutBinding layoutBindingStorageLayoutBindingWrite{};
+        //layoutBindingStorageLayoutBindingWrite.binding = 1;
+        //layoutBindingStorageLayoutBindingWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        //layoutBindingStorageLayoutBindingWrite.descriptorCount = 1;
+        //layoutBindingStorageLayoutBindingWrite.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        //layoutBindingStorageLayoutBindingWrite.pImmutableSamplers = nullptr;
 
 
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings = { layoutBindingStorageLayoutBindingRead, layoutBindingStorageLayoutBindingWrite };
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
+        //std::array<VkDescriptorSetLayoutBinding, 2> bindings = { layoutBindingStorageLayoutBindingRead, layoutBindingStorageLayoutBindingWrite };
+        //VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        //layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        //layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        //layoutInfo.pBindings = bindings.data();
 
-        if (vkCreateDescriptorSetLayout(mRenderContext->mDevice->mDevice, &layoutInfo, nullptr, &mComputeDataPostfx.descriptorSetLayout))
-        {
-            throw std::runtime_error("failed to create descriptor set layout!");
-        }
+        //if (vkCreateDescriptorSetLayout(mRenderContext->mDevice->mDevice, &layoutInfo, nullptr, &mComputeDataPostfx.descriptorSetLayout))
+        //{
+        //    throw std::runtime_error("failed to create descriptor set layout!");
+        //}
 
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = mDescriptorPool->mPool;
         allocInfo.descriptorSetCount = 1u;
-        allocInfo.pSetLayouts = &mComputeDataPostfx.descriptorSetLayout;
+        allocInfo.pSetLayouts = &mRootSignatureCompute->mDescriptorSetLayouts[0];
 
         if (vkAllocateDescriptorSets(mRenderContext->mDevice->mDevice, &allocInfo, &mComputeDataPostfx.descriptorset) != VK_SUCCESS)
         {
@@ -198,18 +210,8 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
 
         vkUpdateDescriptorSets(mRenderContext->mDevice->mDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.pushConstantRangeCount = 0;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &mComputeDataPostfx.descriptorSetLayout;
 
-        if (vkCreatePipelineLayout(mRenderContext->mDevice->mDevice, &pipelineLayoutInfo, nullptr, &mComputeDataPostfx.pipelineLayout) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create pipeline layout!");
-        }
-
-
-        mComputeDataPostfx.pipeline = CreateComputePipeline(mRenderContext, mComputeDataPostfx.pipelineLayout, "Resources/Shaders/postfx.comp.spv");
+        mComputeDataPostfx.pipeline = CreateComputePipeline(mRenderContext, mRootSignatureCompute->mPipelineLayout, "Resources/Shaders/postfx.comp.spv");
 
     }
 }
@@ -262,39 +264,41 @@ void CustomRenderer::Cleanup() {
         vmaFreeMemory(mRenderContext->memoryAllocator, buffer->mAllocation);
     }
 
-    for (auto& buffer : mLightData.mUniformBuffersLights)
-    {
-        vkDestroyBuffer(mRenderContext->mDevice->mDevice, buffer->mBuffer, nullptr);
-        vmaFreeMemory(mRenderContext->memoryAllocator, buffer->mAllocation);
-    }
+	for (auto& buffer : mLightData.mUniformBuffersLights)
+	{
+		vkDestroyBuffer(mRenderContext->mDevice->mDevice, buffer->mBuffer, nullptr);
+		vmaFreeMemory(mRenderContext->memoryAllocator, buffer->mAllocation);
+	}
 
-    for (auto& texture : mSceneTextures)
-    {
-        vkDestroyImageView(mRenderContext->mDevice->mDevice, texture->mView, nullptr);
-        vkDestroyImage(mRenderContext->mDevice->mDevice, texture->mImage, nullptr);
-        vmaFreeMemory(mRenderContext->memoryAllocator, texture->mAllocation);
-    }
+	for (auto& texture : mSceneTextures)
+	{
+		vkDestroyImageView(mRenderContext->mDevice->mDevice, texture->mView, nullptr);
+		vkDestroyImage(mRenderContext->mDevice->mDevice, texture->mImage, nullptr);
+		vmaFreeMemory(mRenderContext->memoryAllocator, texture->mAllocation);
+	}
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vkDestroySemaphore(mRenderContext->mDevice->mDevice, renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(mRenderContext->mDevice->mDevice, imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(mRenderContext->mDevice->mDevice, inFlightFences[i], nullptr);
-    }
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		vkDestroySemaphore(mRenderContext->mDevice->mDevice, renderFinishedSemaphores[i], nullptr);
+		vkDestroySemaphore(mRenderContext->mDevice->mDevice, imageAvailableSemaphores[i], nullptr);
+		vkDestroyFence(mRenderContext->mDevice->mDevice, inFlightFences[i], nullptr);
+	}
 
-    for (size_t i = 0; i < mSwapchain->mImages.size(); i++) {
-        vkDestroyBuffer(mRenderContext->mDevice->mDevice, mUniformBuffersCamera[i]->mBuffer, nullptr);
-        vmaFreeMemory(this->mRenderContext->memoryAllocator, mUniformBuffersCamera[i]->mAllocation);
-    }
+	for (size_t i = 0; i < mSwapchain->mImages.size(); i++) {
+		vkDestroyBuffer(mRenderContext->mDevice->mDevice, mUniformBuffersCamera[i]->mBuffer, nullptr);
+		vmaFreeMemory(this->mRenderContext->memoryAllocator, mUniformBuffersCamera[i]->mAllocation);
+	}
 
-    vkDestroyDescriptorSetLayout(mRenderContext->mDevice->mDevice, mComputeDataPostfx.descriptorSetLayout, nullptr);
-    vkDestroyPipeline(mRenderContext->mDevice->mDevice, mComputeDataPostfx.pipeline, nullptr);
-    vkDestroyPipelineLayout(mRenderContext->mDevice->mDevice, mComputeDataPostfx.pipelineLayout, nullptr);
+	//vkDestroyDescriptorSetLayout(mRenderContext->mDevice->mDevice, mComputeDataPostfx.descriptorSetLayout, nullptr);
+	//vkDestroyPipeline(mRenderContext->mDevice->mDevice, mComputeDataPostfx.pipeline, nullptr);
+	//vkDestroyPipelineLayout(mRenderContext->mDevice->mDevice, mComputeDataPostfx.pipelineLayout, nullptr);
 
-    vkFreeCommandBuffers(mRenderContext->mDevice->mDevice, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+	Renderer::DestroyRootSignature(mRenderContext, mRootSignatureCompute);
 
-    Renderer::DestroyDescriptorPool(mRenderContext, mDescriptorPool);
+	vkFreeCommandBuffers(mRenderContext->mDevice->mDevice, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-    vkDestroyCommandPool(mRenderContext->mDevice->mDevice, commandPool, nullptr);
+	Renderer::DestroyDescriptorPool(mRenderContext, mDescriptorPool);
+
+	vkDestroyCommandPool(mRenderContext->mDevice->mDevice, commandPool, nullptr);
 
     glfwTerminate();
 
@@ -857,7 +861,6 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
                 }
             }
 
-
             auto queryResultMaterial = mResourceManager->QueryMaterialAssetRegistered(object->mMaterial);
             if (!queryResultMaterial)
             {
@@ -1064,7 +1067,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
     // Start compute fullscreen pass
     vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_COMPUTE, mComputeDataPostfx.pipeline);
-    vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_COMPUTE, mComputeDataPostfx.pipelineLayout, 0, 1, &mComputeDataPostfx.descriptorset, 0, 0);
+    vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_COMPUTE, mRootSignatureCompute->mPipelineLayout, 0, 1, &mComputeDataPostfx.descriptorset, 0, 0);
 
     glm::ivec2 dispatchSize = glm::ivec2(16, 16);
     vkCmdDispatch(commandBuffers[imageIndex],
@@ -1254,10 +1257,4 @@ void CustomRenderer::UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<
     vmaMapMemory(mRenderContext->memoryAllocator, mLightData.mUniformBuffersLights[currentImage]->mAllocation, &lightData);
     memcpy(lightData, mLightData.lightCache, sizeof(Light) * AMOUNT_OF_SUPPORTED_LIGHTS);
     vmaUnmapMemory(mRenderContext->memoryAllocator, mLightData.mUniformBuffersLights[currentImage]->mAllocation);
-}
-
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-
-    return VK_FALSE;
 }
