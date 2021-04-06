@@ -1319,7 +1319,10 @@ namespace Flux
 
 
 			static std::shared_ptr<Gfx::GraphicsPipeline> CreateGraphicsPipeline(std::shared_ptr<RenderContext> aContext, const GraphicsPipelineCreateDesc* const aPipelineDesc);
-			static void CreateGraphicsPipeline(std::shared_ptr<RenderContext> aContext, std::shared_ptr<Gfx::GraphicsPipeline> aGraphicsPipeline);
+			static void DestroyGraphicsPipeline(std::shared_ptr<RenderContext> aContext, std::shared_ptr<Gfx::GraphicsPipeline> aGraphicsPipeline);
+
+			static std::shared_ptr<Gfx::ComputePipeline> CreateComputePipeline(std::shared_ptr<RenderContext> aContext, const ComputePipelineCreatedesc* const aPipelineDesc);
+			static void DestroyComputePipeline(std::shared_ptr<RenderContext> aContext, std::shared_ptr<Gfx::ComputePipeline> aComputePipeline);
 
 		};
 	}
