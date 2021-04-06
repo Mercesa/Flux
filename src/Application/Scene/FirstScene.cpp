@@ -32,120 +32,120 @@ void Flux::FirstScene::Init()
 	mCamera->MovementSpeed = 5.0f;
 
 
-	auto tAsset = mAssetManager->LoadModel("Resources\\Models\\Sponza\\sponza.obj");
+	//auto tAsset = mAssetManager->LoadModel("Resources\\Models\\Sponza\\sponza.obj");
 
-	for (auto& mesh : tAsset->mMeshes)
-	{
-		std::shared_ptr<iSceneObject> tSceneObject = std::make_shared<iSceneObject>();
-		tSceneObject->mAsset = mesh;
-		tSceneObject->mMaterial = std::make_shared<Material>();
+	//for (auto& mesh : tAsset->mMeshes)
+	//{
+	//	std::shared_ptr<iSceneObject> tSceneObject = std::make_shared<iSceneObject>();
+	//	tSceneObject->mAsset = mesh;
+	//	tSceneObject->mMaterial = std::make_shared<Material>();
 
-		if (tSceneObject->mAsset->mMaterialAsset.mTextures.size() != 0)
-		{
-			for (auto& texture : tSceneObject->mAsset->mMaterialAsset.mTextures)
-			{
-				std::filesystem::path tPath = std::filesystem::path("Resources/Models/Sponza/" + texture.second);
+	//	if (tSceneObject->mAsset->mMaterialAsset.mTextures.size() != 0)
+	//	{
+	//		for (auto& texture : tSceneObject->mAsset->mMaterialAsset.mTextures)
+	//		{
+	//			std::filesystem::path tPath = std::filesystem::path("Resources/Models/Sponza/" + texture.second);
 
-				if (texture.first == "Diffuse")
-				{
-					tSceneObject->mMaterial->mTextureAssetAlbedo = mAssetManager->LoadTexture(tPath);
-				}
-				if (texture.first == "Specular")
-				{
-					tSceneObject->mMaterial->mTextureAssetSpecular = mAssetManager->LoadTexture(tPath);
-				}
-				if (texture.first == "Height")
-				{
-					tSceneObject->mMaterial->mTextureAssetNormal = mAssetManager->LoadTexture(tPath);
-				}
-			}
-		}
+	//			if (texture.first == "Diffuse")
+	//			{
+	//				tSceneObject->mMaterial->mTextureAssetAlbedo = mAssetManager->LoadTexture(tPath);
+	//			}
+	//			if (texture.first == "Specular")
+	//			{
+	//				tSceneObject->mMaterial->mTextureAssetSpecular = mAssetManager->LoadTexture(tPath);
+	//			}
+	//			if (texture.first == "Height")
+	//			{
+	//				tSceneObject->mMaterial->mTextureAssetNormal = mAssetManager->LoadTexture(tPath);
+	//			}
+	//		}
+	//	}
 
-		if(!tSceneObject->mMaterial->mTextureAssetAlbedo)
-		{
-			std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
-			tSceneObject->mMaterial->mTextureAssetAlbedo = mAssetManager->LoadTexture(tPath);
-		}
+	//	if(!tSceneObject->mMaterial->mTextureAssetAlbedo)
+	//	{
+	//		std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
+	//		tSceneObject->mMaterial->mTextureAssetAlbedo = mAssetManager->LoadTexture(tPath);
+	//	}
 
-		if (!tSceneObject->mMaterial->mTextureAssetSpecular)
-		{
-			std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
-			tSceneObject->mMaterial->mTextureAssetSpecular = mAssetManager->LoadTexture(tPath);
-		}
+	//	if (!tSceneObject->mMaterial->mTextureAssetSpecular)
+	//	{
+	//		std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
+	//		tSceneObject->mMaterial->mTextureAssetSpecular = mAssetManager->LoadTexture(tPath);
+	//	}
 
-		if (!tSceneObject->mMaterial->mTextureAssetNormal)
-		{
-			std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
-			tSceneObject->mMaterial->mTextureAssetNormal = mAssetManager->LoadTexture(tPath);
-		}
+	//	if (!tSceneObject->mMaterial->mTextureAssetNormal)
+	//	{
+	//		std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
+	//		tSceneObject->mMaterial->mTextureAssetNormal = mAssetManager->LoadTexture(tPath);
+	//	}
 
-		tSceneObject->mRenderState.shaders.push_back({ Flux::Gfx::ShaderTypes::eVertex, 		"Resources/Shaders/basicModel.vert.spv" });
-		tSceneObject->mRenderState.shaders.push_back({ Flux::Gfx::ShaderTypes::eFragment, 		"Resources/Shaders/basicModel.frag.spv" });
+	//	tSceneObject->mRenderState.shaders.push_back({ Flux::Gfx::ShaderTypes::eVertex, 		"Resources/Shaders/basicModel.vert.spv" });
+	//	tSceneObject->mRenderState.shaders.push_back({ Flux::Gfx::ShaderTypes::eFragment, 		"Resources/Shaders/basicModel.frag.spv" });
 
-		glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(0.05f));
+	//	glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(0.05f));
 
-		tSceneObject->transform = scaleMatrix;
+	//	tSceneObject->transform = scaleMatrix;
 
-		this->mSceneObjects.push_back(tSceneObject);
+	//	this->mSceneObjects.push_back(tSceneObject);
 
-	}
+	//}
 
-	/*auto tAssetDragon = mAssetManager->LoadModel("Resources\\Models\\Dragon\\dragon.obj");
+	//auto tAssetDragon = mAssetManager->LoadModel("Resources\\Models\\Dragon\\dragon.obj");
 
-	for (auto& mesh : tAssetDragon->mMeshes)
-	{
-		std::shared_ptr<iSceneObject> tSceneObject = std::make_shared<iSceneObject>();
-		tSceneObject->mAsset = mesh;
-		tSceneObject->mMaterial = std::make_shared<Material>();
+	//for (auto& mesh : tAssetDragon->mMeshes)
+	//{
+	//	std::shared_ptr<iSceneObject> tSceneObject = std::make_shared<iSceneObject>();
+	//	tSceneObject->mAsset = mesh;
+	//	tSceneObject->mMaterial = std::make_shared<Material>();
 
-		if (tSceneObject->mAsset->mMaterialAsset.mTextures.size() != 0)
-		{
-			for (auto& texture : tSceneObject->mAsset->mMaterialAsset.mTextures)
-			{
-				std::filesystem::path tPath = std::filesystem::path("Resources/Models/Dragon/" + texture.second);
+	//	if (tSceneObject->mAsset->mMaterialAsset.mTextures.size() != 0)
+	//	{
+	//		for (auto& texture : tSceneObject->mAsset->mMaterialAsset.mTextures)
+	//		{
+	//			std::filesystem::path tPath = std::filesystem::path("Resources/Models/Dragon/" + texture.second);
 
-				if (texture.first == "Diffuse")
-				{
-					tSceneObject->mMaterial->mTextureAssetAlbedo = mAssetManager->LoadTexture(tPath);
-				}
-				if (texture.first == "Specular")
-				{
-					tSceneObject->mMaterial->mTextureAssetSpecular = mAssetManager->LoadTexture(tPath);
-				}
-				if (texture.first == "Height")
-				{
-					tSceneObject->mMaterial->mTextureAssetNormal = mAssetManager->LoadTexture(tPath);
-				}
-			}
-		}
+	//			if (texture.first == "Diffuse")
+	//			{
+	//				tSceneObject->mMaterial->mTextureAssetAlbedo = mAssetManager->LoadTexture(tPath);
+	//			}
+	//			if (texture.first == "Specular")
+	//			{
+	//				tSceneObject->mMaterial->mTextureAssetSpecular = mAssetManager->LoadTexture(tPath);
+	//			}
+	//			if (texture.first == "Height")
+	//			{
+	//				tSceneObject->mMaterial->mTextureAssetNormal = mAssetManager->LoadTexture(tPath);
+	//			}
+	//		}
+	//	}
 
-		if (!tSceneObject->mMaterial->mTextureAssetAlbedo)
-		{
-			std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
-			tSceneObject->mMaterial->mTextureAssetAlbedo = mAssetManager->LoadTexture(tPath);
-		}
+	//	if (!tSceneObject->mMaterial->mTextureAssetAlbedo)
+	//	{
+	//		std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
+	//		tSceneObject->mMaterial->mTextureAssetAlbedo = mAssetManager->LoadTexture(tPath);
+	//	}
 
-		if (!tSceneObject->mMaterial->mTextureAssetSpecular)
-		{
-			std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
-			tSceneObject->mMaterial->mTextureAssetSpecular = mAssetManager->LoadTexture(tPath);
-		}
+	//	if (!tSceneObject->mMaterial->mTextureAssetSpecular)
+	//	{
+	//		std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
+	//		tSceneObject->mMaterial->mTextureAssetSpecular = mAssetManager->LoadTexture(tPath);
+	//	}
 
-		if (!tSceneObject->mMaterial->mTextureAssetNormal)
-		{
-			std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
-			tSceneObject->mMaterial->mTextureAssetNormal = mAssetManager->LoadTexture(tPath);
-		}
+	//	if (!tSceneObject->mMaterial->mTextureAssetNormal)
+	//	{
+	//		std::filesystem::path tPath = std::filesystem::path(cPathCheckerboardTexture);
+	//		tSceneObject->mMaterial->mTextureAssetNormal = mAssetManager->LoadTexture(tPath);
+	//	}
 
-		tSceneObject->mRenderState.shaders.push_back({ Flux::Gfx::ShaderTypes::eVertex, 		"Resources/Shaders/basicModel.vert.spv" });
-		tSceneObject->mRenderState.shaders.push_back({ Flux::Gfx::ShaderTypes::eFragment, 		"Resources/Shaders/basicModel.frag.spv" });
+	//	tSceneObject->mRenderState.shaders.push_back({ Flux::Gfx::ShaderTypes::eVertex, 		"Resources/Shaders/basicModel.vert.spv" });
+	//	tSceneObject->mRenderState.shaders.push_back({ Flux::Gfx::ShaderTypes::eFragment, 		"Resources/Shaders/basicModel.frag.spv" });
 
-		glm::mat4 scaleMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(5.0f));
-		tSceneObject->transform = scaleMatrix;
+	//	glm::mat4 scaleMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(5.0f));
+	//	tSceneObject->transform = scaleMatrix;
 
-		this->mSceneObjects.push_back(tSceneObject);
+	//	this->mSceneObjects.push_back(tSceneObject);
 
-	}*/
+	//}
 
 	for (uint32_t y = 0; y < 3; ++y)
 	{

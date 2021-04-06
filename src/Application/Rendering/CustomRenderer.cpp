@@ -54,6 +54,7 @@ void Flux::CustomRenderer::Init()
 {
     InitVulkan();
 
+
     {
         ImGui_ImplVulkan_InitInfo imguiInitInfo{};
 
@@ -82,6 +83,7 @@ void Flux::CustomRenderer::Init()
         ImGui_ImplVulkan_CreateFontsTexture(cmdBuffer);
         Renderer::EndSingleTimeCommands(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, cmdBuffer, commandPool);
         ImGui_ImplVulkan_DestroyFontUploadObjects();
+
     }
 }
 
@@ -92,42 +94,10 @@ void Flux::CustomRenderer::WaitIdle()
 
 void CustomRenderer::CustomRenderer::InitVulkan() {
 
+    CreateDescriptorSetLayout();
     CreateCommandPool();
     CreateTextureSampler();
     CreateUniformBuffers();
-
-    std::shared_ptr<Gfx::Shader> tFragShader = nullptr;
-    {
-        auto filepath = "Resources/Shaders/basicModel.frag.spv";
-        auto codeFrag = Flux::Common::ReadFile<char>(filepath);
-
-        ShaderCreateDesc fragShaderCD{};
-        fragShaderCD.mCode = codeFrag;
-        fragShaderCD.mFilePath = filepath;
-        fragShaderCD.mType = ShaderTypes::eFragment;
-        tFragShader = Renderer::CreateShader(mRenderContext, &fragShaderCD);
-        mShadersAll.push_back(tFragShader);
-    }
-
-    std::shared_ptr<Gfx::Shader> tVertShader = nullptr;
-    {
-        auto filepath = "Resources/Shaders/basicModel.vert.spv";
-        auto codeVert = Flux::Common::ReadFile<char>(filepath);
-
-        ShaderCreateDesc vertShaderCD{};
-        vertShaderCD.mCode = codeVert;
-        vertShaderCD.mFilePath = filepath;
-        vertShaderCD.mType = ShaderTypes::eVertex;
-        tVertShader = Renderer::CreateShader(mRenderContext, &vertShaderCD);
-        mShadersAll.push_back(tVertShader);
-    }
-
-    Gfx::RootSignatureCreateDesc sceneRootSigDesc{};
-    sceneRootSigDesc.mShaders = { tFragShader, tVertShader };
-    mRootSignatureScene = Renderer::CreateRootSignature(mRenderContext, &sceneRootSigDesc);
-
-    mRootSignaturesAll.push_back(mRootSignatureScene);
-
     CreateDescriptorSets();
     CreateCommandBuffers();
     CreateSyncObjects();
@@ -176,6 +146,7 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
     mRootSignatureCompute = Renderer::CreateRootSignature(mRenderContext, &rootSigDesc);
 
     {
+
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = mDescriptorPool->mPool;
@@ -215,14 +186,10 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
 
         vkUpdateDescriptorSets(mRenderContext->mDevice->mDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
-        ComputePipelineCreatedesc computePipelineCreateDesc{};
-        computePipelineCreateDesc.mRootSig = mRootSignatureCompute;
 
-        mComputePipeline = Renderer::CreateComputePipeline(mRenderContext, &computePipelineCreateDesc);
+        mComputeDataPostfx.pipeline = CreateComputePipeline(mRenderContext, mRootSignatureCompute->mPipelineLayout, "Resources/Shaders/postfx.comp.spv");
+
     }
-
-
-
 }
 
 void CustomRenderer::CustomRenderer::MainLoop() {
@@ -232,10 +199,12 @@ void CustomRenderer::CustomRenderer::MainLoop() {
 void CustomRenderer::CustomRenderer::CleanupSwapChain() {
     for (auto& e : mPipelines)
     {
-        Renderer::DestroyGraphicsPipeline(mRenderContext, e.second);
+        vkDestroyPipeline(mRenderContext->mDevice->mDevice, e.second, nullptr);
     }
 
     mPipelines.clear();
+
+    vkDestroyPipelineLayout(mRenderContext->mDevice->mDevice, pipelineLayoutSceneObjects, nullptr);
 
     Renderer::DestroySwapchain(mRenderContext, mSwapchain);
 
@@ -260,18 +229,8 @@ void CustomRenderer::Cleanup() {
     vkDestroyImage(mRenderContext->mDevice->mDevice, mEmptyTexture->mImage, nullptr);
     vmaFreeMemory(mRenderContext->memoryAllocator, mEmptyTexture->mAllocation);
 
-
-    for (auto rootSig : mRootSignaturesAll)
-    {
-        Renderer::DestroyRootSignature(mRenderContext, mRootSignatureSceneObjects);
-    }
-    mRootSignaturesAll.clear();
-
-    for (auto pipeline : mPipelines)
-    {
-        Renderer::DestroyGraphicsPipeline(mRenderContext, pipeline.second);
-    }
-    mPipelines.clear();
+    vkDestroyDescriptorSetLayout(mRenderContext->mDevice->mDevice, descriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(mRenderContext->mDevice->mDevice, descriptorSetLayoutSceneObjects, nullptr);
 
     for (auto& buffer : mSceneBuffers)
     {
@@ -303,8 +262,8 @@ void CustomRenderer::Cleanup() {
 		vmaFreeMemory(this->mRenderContext->memoryAllocator, mUniformBuffersCamera[i]->mAllocation);
 	}
 
+    vkDestroyPipeline(mRenderContext->mDevice->mDevice, mComputeDataPostfx.pipeline, nullptr);
 
-    Renderer::DestroyComputePipeline(mRenderContext, mComputePipeline);
 	Renderer::DestroyRootSignature(mRenderContext, mRootSignatureCompute);
 
 	vkFreeCommandBuffers(mRenderContext->mDevice->mDevice, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
@@ -355,108 +314,27 @@ void CustomRenderer::RecreateSwapChain() {
     CreateDescriptorSets();
 }
 
-std::optional<std::shared_ptr<Flux::Gfx::Shader>> CustomRenderer::DoesShaderExist(std::string aFilePath)
+
+VkPipeline Flux::CustomRenderer::CreateGraphicsPipelineForState(RenderState state)
 {
-    for (auto& shader : mShadersAll)
-    {
-        if (shader->mFilePath == aFilePath)
-        {
-            return std::optional<std::shared_ptr<Flux::Gfx::Shader>>(shader);
-        }
-    }
-
-    return std::nullopt;
-}
-
-std::optional<std::shared_ptr<Flux::Gfx::RootSignature>> Flux::CustomRenderer::DoesRootSignatureExist(const std::vector<std::shared_ptr<Flux::Gfx::Shader>>& aShaders)
-{
-    // Go through all root signatures, check if there is a matching shader list to an existing root signature
-    for (const auto& rootSig : mRootSignaturesAll)
-    {
-        if (rootSig->mShaders.size() != aShaders.size())
-        {
-            continue;
-        }
-
-        bool match = true;
-
-        for (const auto& shader : aShaders)
-        {
-            bool shaderMatch = false;
-
-            // Check if we can find a matching shader from the root signature
-            // if not then there is no match and this root sig doesn't match our input
-            for (const auto& shaderRootSig : rootSig->mShaders)
-            {
-                if (shaderRootSig->mFilePath == shader->mFilePath)
-                {
-                    shaderMatch = true;
-                    break;
-                }
-            }
-
-            if (!shaderMatch)
-            {
-                match = false;
-                break;
-            }
-        }
-
-        if (match)
-        {
-            return std::optional<std::shared_ptr<Flux::Gfx::RootSignature>>(rootSig);
-        }
-    }
-
-    return std::optional<std::shared_ptr<Flux::Gfx::RootSignature>>();
-}
-
-std::shared_ptr<Flux::Gfx::GraphicsPipeline> Flux::CustomRenderer::CreateGraphicsPipelineForState(RenderState state)
-{
-
-    std::vector<std::shared_ptr<Flux::Gfx::Shader>> tShaders;
+    std::vector<VkShaderModule> modules;
+    std::vector<VkPipelineShaderStageCreateInfo> pipelineCreateInfo;
 
     // Prepare the pipeline stages
     for (auto& e : state.shaders)
     {
-        std::shared_ptr<Flux::Gfx::Shader> tShader;
+        auto shaderCode =  Common::ReadFile<char>(e.second);
 
-        auto shaderOptional = DoesShaderExist(e.second);
+        VkShaderModule shaderModule = Renderer::CreateShaderModule(mRenderContext->mDevice->mDevice, shaderCode);
 
-        if (!shaderOptional.has_value())
-        {
-            auto shaderCode = Common::ReadFile<char>(e.second);
+        VkPipelineShaderStageCreateInfo shaderStageInfo{};
+        shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStageInfo.stage = ConvertShaderToVkShaderStageBit(e.first);
+        shaderStageInfo.module = shaderModule;
+        shaderStageInfo.pName = "main";
 
-            ShaderCreateDesc shaderCreateDesc{};
-            shaderCreateDesc.mCode = shaderCode;
-            shaderCreateDesc.mFilePath = e.second;
-            shaderCreateDesc.mType = e.first;
-            tShader = Renderer::CreateShader(mRenderContext, &shaderCreateDesc);
-        }
-        else
-        {
-            tShader = shaderOptional.value();
-        }
-
-        tShaders.push_back(tShader);
-        mShadersAll.push_back(tShader);
-    }
-
-    auto resultRootQuery = DoesRootSignatureExist(tShaders);
-
-    std::shared_ptr<RootSignature> tRootSig = nullptr;
-    if (resultRootQuery.has_value())
-    {
-        tRootSig = resultRootQuery.value();
-    }
-    else
-    {
-        RootSignatureCreateDesc rootSigCreateDesc{};
-        rootSigCreateDesc.mShaders = tShaders;
-
-        tRootSig = Renderer::CreateRootSignature(mRenderContext, &rootSigCreateDesc);
-
-        mRootSignaturesAll.push_back(tRootSig);
+        modules.push_back(shaderModule);
+        pipelineCreateInfo.push_back(shaderStageInfo);
     }
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -500,16 +378,118 @@ std::shared_ptr<Flux::Gfx::GraphicsPipeline> Flux::CustomRenderer::CreateGraphic
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
     vertexInputInfo.pVertexAttributeDescriptions = vertexAttrDescriptions.data();
 
-    Flux::Gfx::GraphicsPipelineCreateDesc pipelineDesc;
-    pipelineDesc.vertexAttrDescriptions = vertexAttrDescriptions;
-    pipelineDesc.bindingDescription = bindingDescription;
-    pipelineDesc.mPushConstantSize = sizeof(glm::mat4);
-    pipelineDesc.mRootSig = tRootSig;
-    pipelineDesc.mRt = mRenderTargetScene;
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+    inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float)mSwapchain->mExtent.width;
+    viewport.height = (float)mSwapchain->mExtent.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    VkRect2D scissor{};
+    scissor.offset = { 0, 0 };
+    scissor.extent = mSwapchain->mExtent;
+
+    VkPipelineViewportStateCreateInfo viewportState{};
+    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportState.viewportCount = 1;
+    viewportState.pViewports = &viewport;
+    viewportState.scissorCount = 1;
+    viewportState.pScissors = &scissor;
+
+    VkPipelineRasterizationStateCreateInfo rasterizer{};
+    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer.depthClampEnable = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer.lineWidth = 1.0f;
+    rasterizer.cullMode = ConvertCullModeToVkCullBit(state.drawState.cullMode);
+    rasterizer.frontFace = ConvertFrontFaceToVkFaceBit(state.drawState.frontFaceMode);
+    rasterizer.depthBiasEnable = VK_FALSE;
+
+    VkPipelineMultisampleStateCreateInfo multisampling{};
+    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment.blendEnable = VK_FALSE;
+
+    VkPipelineColorBlendStateCreateInfo colorBlending{};
+    colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlending.logicOpEnable = VK_FALSE;
+    colorBlending.logicOp = VK_LOGIC_OP_COPY;
+    colorBlending.attachmentCount = 1;
+    colorBlending.pAttachments = &colorBlendAttachment;
+    colorBlending.blendConstants[0] = 0.0f;
+    colorBlending.blendConstants[1] = 0.0f;
+    colorBlending.blendConstants[2] = 0.0f;
+    colorBlending.blendConstants[3] = 0.0f;
+
+    VkPushConstantRange pushConstantRange{};
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = sizeof(glm::mat4);
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 2;
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
 
+    VkDescriptorSetLayout layouts[2] = { descriptorSetLayout, descriptorSetLayoutSceneObjects };
+    pipelineLayoutInfo.pSetLayouts = layouts;
 
-    auto tPipeline = Renderer::CreateGraphicsPipeline(mRenderContext, &pipelineDesc);
+    if (vkCreatePipelineLayout(mRenderContext->mDevice->mDevice, &pipelineLayoutInfo, nullptr, &pipelineLayoutSceneObjects) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create pipeline layout!");
+    }
+
+
+    VkPipelineDepthStencilStateCreateInfo depthStencil{};
+    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencil.depthTestEnable = VK_TRUE;
+    depthStencil.depthWriteEnable = VK_TRUE;
+    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    depthStencil.depthBoundsTestEnable = VK_FALSE;
+    depthStencil.minDepthBounds = 0.0f; // Optional
+    depthStencil.maxDepthBounds = 1.0f; // Optional
+    depthStencil.stencilTestEnable = VK_FALSE;
+    depthStencil.front = {}; // Optional
+    depthStencil.back = {}; // Optional
+
+
+    VkGraphicsPipelineCreateInfo pipelineInfo{};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.stageCount = pipelineCreateInfo.size();
+    pipelineInfo.pStages = pipelineCreateInfo.data();
+    pipelineInfo.pVertexInputState = &vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &inputAssembly;
+    pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pMultisampleState = &multisampling;
+    pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.pDepthStencilState = &depthStencil;
+    pipelineInfo.layout = pipelineLayoutSceneObjects;
+    pipelineInfo.renderPass = mRenderTargetScene->mPass;
+    pipelineInfo.subpass = 0;
+    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+    VkPipeline tPipeline;
+    if (vkCreateGraphicsPipelines(mRenderContext->mDevice->mDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &tPipeline) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create graphics pipeline!");
+    }
+
+    for (auto& shaderModule : modules)
+    {
+        vkDestroyShaderModule(mRenderContext->mDevice->mDevice, shaderModule, nullptr);
+    }
 
     return tPipeline;
 }
@@ -539,6 +519,79 @@ uint32_t Flux::CustomRenderer::CreatePipeline(RenderState state)
     this->mPipelines.push_back({state, CreateGraphicsPipelineForState(state) });
 
     return this->mPipelines.size() - 1;
+}
+
+void CustomRenderer::CreateDescriptorSetLayout()
+{
+    {
+        VkDescriptorSetLayoutBinding uboLayoutBindingCamera{};
+        uboLayoutBindingCamera.binding = 0;
+        uboLayoutBindingCamera.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBindingCamera.descriptorCount = 1;
+        uboLayoutBindingCamera.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        uboLayoutBindingCamera.pImmutableSamplers = nullptr;
+
+        VkDescriptorSetLayoutBinding uboLayoutBindingLight{};
+        uboLayoutBindingLight.binding = 1;
+        uboLayoutBindingLight.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBindingLight.descriptorCount = 1;
+        uboLayoutBindingLight.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        uboLayoutBindingLight.pImmutableSamplers = nullptr;
+
+
+        std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBindingCamera, uboLayoutBindingLight };
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+
+        if (vkCreateDescriptorSetLayout(mRenderContext->mDevice->mDevice, &layoutInfo, nullptr, &descriptorSetLayout))
+        {
+            throw std::runtime_error("failed to create descriptor set layout!");
+        }
+    }
+
+    {
+        VkDescriptorSetLayoutBinding textureLayoutBinding0{};
+        textureLayoutBinding0.binding = 0;
+        textureLayoutBinding0.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        textureLayoutBinding0.descriptorCount = 1;
+        textureLayoutBinding0.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        textureLayoutBinding0.pImmutableSamplers = nullptr;
+
+        VkDescriptorSetLayoutBinding textureLayoutBinding1{};
+        textureLayoutBinding1.binding = 1;
+        textureLayoutBinding1.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        textureLayoutBinding1.descriptorCount = 1;
+        textureLayoutBinding1.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        textureLayoutBinding1.pImmutableSamplers = nullptr;
+
+        VkDescriptorSetLayoutBinding textureLayoutBinding2{};
+        textureLayoutBinding2.binding = 2;
+        textureLayoutBinding2.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        textureLayoutBinding2.descriptorCount = 1;
+        textureLayoutBinding2.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        textureLayoutBinding2.pImmutableSamplers = nullptr;
+
+        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+        samplerLayoutBinding.binding = 3;
+        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+        samplerLayoutBinding.descriptorCount = 1;
+        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        samplerLayoutBinding.pImmutableSamplers = nullptr;
+
+        std::array<VkDescriptorSetLayoutBinding, 4> bindingsSceneObject = { textureLayoutBinding0, textureLayoutBinding1, textureLayoutBinding2, samplerLayoutBinding };
+        VkDescriptorSetLayoutCreateInfo layoutInfoSceneObject{};
+        layoutInfoSceneObject.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfoSceneObject.bindingCount = static_cast<uint32_t>(bindingsSceneObject.size());
+        layoutInfoSceneObject.pBindings = bindingsSceneObject.data();
+
+        if (vkCreateDescriptorSetLayout(mRenderContext->mDevice->mDevice, &layoutInfoSceneObject, nullptr, &descriptorSetLayoutSceneObjects))
+        {
+            throw std::runtime_error("failed to create descriptor set layout!");
+        }
+    }
+
 }
 
 void CustomRenderer::CreateCommandPool() {
@@ -600,7 +653,7 @@ void CustomRenderer::CreateUniformBuffers()
 
 void CustomRenderer::CreateDescriptorSets()
 {
-    std::vector<VkDescriptorSetLayout> layouts(mSwapchain->mImages.size(), mRootSignatureScene->mDescriptorSetLayouts[0]);
+    std::vector<VkDescriptorSetLayout> layouts(mSwapchain->mImages.size(), descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = mDescriptorPool->mPool;
@@ -785,7 +838,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
             auto queryResultMaterial = mResourceManager->QueryMaterialAssetRegistered(object->mMaterial);
             if (!queryResultMaterial)
             {
-                std::vector<VkDescriptorSetLayout> layouts = { mRootSignatureScene->mDescriptorSetLayouts[1] };
+                std::vector<VkDescriptorSetLayout> layouts = { descriptorSetLayoutSceneObjects };
                 VkDescriptorSetAllocateInfo allocInfo{};
                 allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
                 allocInfo.descriptorPool = mDescriptorPool->mPool;
@@ -952,9 +1005,9 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
         }
 
 
-        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, this->mPipelines[object->mRenderState.stateID.value()].second->pipeline);
+        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, this->mPipelines[object->mRenderState.stateID.value()].second);
         std::vector<VkDescriptorSet> objectSets = { descriptorSetsSceneObjects[imageIndex], object->mMaterial->mDescriptorSet };
-        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, this->mPipelines[object->mRenderState.stateID.value()].second->mRootSignature.lock()->mPipelineLayout, 0, objectSets.size(), objectSets.data(), 0, nullptr);
+        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayoutSceneObjects, 0, objectSets.size(), objectSets.data(), 0, nullptr);
 
         VkBuffer vertexBuffers[] = { object->mMesh->mVertexBuffer->mBuffer };
         VkDeviceSize offsets[] = { 0 };
@@ -963,7 +1016,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
         vkCmdPushConstants(
             commandBuffers[imageIndex],
-            this->mPipelines[object->mRenderState.stateID.value()].second->mRootSignature.lock()->mPipelineLayout,
+            pipelineLayoutSceneObjects,
             VK_SHADER_STAGE_VERTEX_BIT,
             0,
             sizeof(glm::mat4),
@@ -985,7 +1038,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
 
     // Start compute fullscreen pass
-    vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_COMPUTE, mComputePipeline->computePipeline);
+    vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_COMPUTE, mComputeDataPostfx.pipeline);
     vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_COMPUTE, mRootSignatureCompute->mPipelineLayout, 0, 1, &mComputeDataPostfx.descriptorset, 0, 0);
 
     glm::ivec2 dispatchSize = glm::ivec2(16, 16);

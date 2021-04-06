@@ -90,6 +90,7 @@ namespace Flux
 
 		struct ComputeDataPostfx
 		{
+			VkPipeline pipeline;
 			VkDescriptorSet descriptorset;
 
 		} mComputeDataPostfx;
@@ -110,7 +111,13 @@ namespace Flux
 
 		std::shared_ptr<Flux::Gfx::RootSignature> mRootSignatureSceneObjects;
 
-		//std::vector<std::shared_ptr<Flux::Gfx::Shader>>;
+		VkDescriptorSetLayout descriptorSetLayout;
+
+		VkDescriptorSetLayout descriptorSetLayoutPerObject;
+
+		VkPipelineLayout pipelineLayoutSceneObjects;
+		VkDescriptorSetLayout descriptorSetLayoutSceneObjects;
+
 		std::vector<VkDescriptorSet> descriptorSetsSceneObjects;
 
 
@@ -130,7 +137,7 @@ namespace Flux
 
 
 		std::vector<std::shared_ptr<VkDescriptorSet>> mSceneSets;
-		std::vector<std::pair<RenderState, std::shared_ptr<Flux::Gfx::GraphicsPipeline>>> mPipelines;
+		std::vector<std::pair<RenderState, VkPipeline>> mPipelines;
 
 
 		std::unique_ptr<RenderingResourceManager> mResourceManager;
@@ -206,9 +213,6 @@ namespace Flux
 		bool framebufferResized = false;
 
 	private:
-		std::optional<std::shared_ptr<Flux::Gfx::Shader>> DoesShaderExist(std::string aFilePath);
-		std::optional<std::shared_ptr<Flux::Gfx::RootSignature>> DoesRootSignatureExist(const std::vector<std::shared_ptr<Flux::Gfx::Shader>>& aShaders);
-
 
 		void InitVulkan();
 
@@ -218,9 +222,11 @@ namespace Flux
 
 		void RecreateSwapChain();
 
-		std::shared_ptr<Flux::Gfx::GraphicsPipeline> CreateGraphicsPipelineForState(RenderState state);
+		VkPipeline CreateGraphicsPipelineForState(RenderState state);
 		std::optional<uint32_t> QueryPipeline(RenderState state);
 		uint32_t CreatePipeline(RenderState state);
+
+		void CreateDescriptorSetLayout();
 
 		void CreateCommandPool();
 
@@ -228,7 +234,7 @@ namespace Flux
 
 		void CreateUniformBuffers();
 
-		void CreateDescriptorSets();
+	    void CreateDescriptorSets();
 
 		void CreateCommandBuffers();
 
@@ -240,10 +246,7 @@ namespace Flux
 
 
 
-	public:
-		std::vector < std::shared_ptr<Flux::Gfx::Shader>> mShadersAll;
-		std::vector<std::shared_ptr<Flux::Gfx::RootSignature>> mRootSignaturesAll;
-
+		public:
 		std::shared_ptr<Flux::Gfx::RenderContext> mRenderContext;
 		std::shared_ptr<Flux::Gfx::Swapchain> mSwapchain;
 		std::shared_ptr<Flux::Gfx::Queue> mQueueGraphics;
@@ -255,10 +258,8 @@ namespace Flux
 		std::shared_ptr<Flux::Gfx::RenderTarget> mRenderTargetFinal;
 		std::shared_ptr<Flux::Gfx::RootSignature> mRootSignatureCompute;
 		std::shared_ptr<Flux::Gfx::Shader> mComputeShader;
-		std::shared_ptr<Flux::Gfx::ComputePipeline> mComputePipeline;
 
 
-		std::shared_ptr<Gfx::RootSignature> mRootSignatureScene;
 	};
 
 }
