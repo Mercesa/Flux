@@ -19,6 +19,7 @@ namespace Flux
 		{
 			std::vector<std::shared_ptr<Shader>> mShaders;
 			std::vector<Flux::Gfx::ShaderReflection::ShaderResourceReflection> mRootSignatureResources; // Collection of all the usable shader resources from all the shaders within this root signature
+			std::vector<Flux::Gfx::ShaderReflection::PushConstantReflection> mPushConstantBuffers;
 
 			// Vulkan
 			VkPipelineLayout mPipelineLayout;

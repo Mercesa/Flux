@@ -37,6 +37,7 @@
 #include "Renderer/RenderContext.h"
 #include "Renderer/RenderTarget.h"
 #include "Renderer/RootSignature.h"
+#include "Renderer/Pipeline.h"
 
 #include "Renderer/VulkanDebug.h"
 
@@ -145,15 +146,6 @@ namespace Flux
 		class Renderer
 		{
 		public:
-
-			//static void SetDebugNameForobject(std::shared_ptr<RenderContext> aContext, uint64_t vkHandle, VkObjectType type, std::string aName)
-			//{
-			//	VkDebugUtilsObjectNameInfoEXT  nameInfo = {};
-			//	nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
-			//	nameInfo.objectType = type;
-			//	nameInfo.objectHandle = (uint64_t)vkHandle;
-			//	nameInfo.pObjectName = aName.c_str();
-			//	auto func = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(aContext->instance, "vkSetDebugUtilsObjectNameEXT");
 
 			//	func(aContext->mDevice->mDevice, &nameInfo);
 			//}
@@ -324,6 +316,16 @@ namespace Flux
 				return VK_FALSE;
 			}
 
+			static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+			{
+				createInfo = {};
+				createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+				createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+				createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+				createInfo.pfnUserCallback = debugCallback;
+			}
+
+
 			static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
 				for (const auto& availableFormat : availableFormats) {
 					if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -399,23 +401,6 @@ namespace Flux
 					return actualExtent;
 				}
 			}
-
-			//static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
-			//	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-			//	if (func != nullptr) {
-			//		func(instance, debugMessenger, pAllocator);
-			//	}
-			//}
-
-			//static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
-			//	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-			//	if (func != nullptr) {
-			//		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-			//	}
-			//	else {
-			//		return VK_ERROR_EXTENSION_NOT_PRESENT;
-			//	}
-			//}
 
 			bool HasStencilComponent(VkFormat format) {
 				return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
@@ -597,26 +582,6 @@ namespace Flux
 				return indices;
 			}
 
-			static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
-			{
-				createInfo = {};
-				createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-				createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-				createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-				createInfo.pfnUserCallback = debugCallback;
-			}
-
-			//static void SetupDebugMessenger(std::shared_ptr<RenderContext> aContext)
-			//{
-			//	if (!aContext->debugMode) return;
-
-			//	VkDebugUtilsMessengerCreateInfoEXT createInfo;
-			//	populateDebugMessengerCreateInfo(createInfo);
-
-			//	if (CreateDebugUtilsMessengerEXT(aContext->instance, &createInfo, nullptr, &aContext->debugMessenger) != VK_SUCCESS) {
-			//		throw std::runtime_error("failed to set up debug messenger!");
-			//	}
-			//}
 
 			static void CreateImage(std::shared_ptr<RenderContext> aContext, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage properties, VkImage& image, VmaAllocation& imageMemory, uint32_t miplevels)
 			{
@@ -1024,14 +989,11 @@ namespace Flux
 			}
 			static void DestroyRenderContext(std::shared_ptr<RenderContext> aRenderContext)
 			{
-				//if (aRenderContext->debugMode) {
-				//	DestroyDebugUtilsMessengerEXT(aRenderContext->instance, aRenderContext->debugMessenger, nullptr);
-				//}
+
+				vks::debug::freeDebugCallback(aRenderContext->instance);
 
 				vmaDestroyAllocator(aRenderContext->memoryAllocator);
-				//vkDestroySurfaceKHR(aRenderContext->instance, aRenderContext->surface, nullptr);
 				vkDestroyDevice(aRenderContext->mDevice->mDevice, nullptr);
-
 				vkDestroyInstance(aRenderContext->instance, nullptr);
 			}
 
@@ -1328,8 +1290,6 @@ namespace Flux
 				return tRenderTarget;
 			}
 
-
-
 			static void DestroyRenderTarget(std::shared_ptr<RenderContext> aContext, std::shared_ptr<RenderTarget> aRenderTarget)
 			{
 				assert(aContext);
@@ -1352,6 +1312,14 @@ namespace Flux
 					vmaDestroyImage(aContext->memoryAllocator, aRenderTarget->mDepthImage->mImage, aRenderTarget->mDepthImage->mAllocation);
 				}
 			}
+
+
+			static std::shared_ptr<Gfx::Shader> CreateShader(std::shared_ptr<RenderContext> aContext, const ShaderCreateDesc* const aShaderDesc);
+			static void DestroyShader(std::shared_ptr<RenderContext> aContext, std::shared_ptr<Gfx::Shader> aShader);
+
+
+			static std::shared_ptr<Gfx::GraphicsPipeline> CreateGraphicsPipeline(std::shared_ptr<RenderContext> aContext, const GraphicsPipelineCreateDesc* const aPipelineDesc);
+			static void CreateGraphicsPipeline(std::shared_ptr<RenderContext> aContext, std::shared_ptr<Gfx::GraphicsPipeline> aGraphicsPipeline);
 
 		};
 	}

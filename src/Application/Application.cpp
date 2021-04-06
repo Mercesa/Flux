@@ -10,7 +10,7 @@
 #include "Common/Time/Timer.h"
 #include "Application/Rendering/ImguiRenderingHelper.h"
 
-const uint32_t WIDTH = 1366;
+const uint32_t WIDTH = 1024;
 const uint32_t HEIGHT = 768;
 
 using namespace Flux;

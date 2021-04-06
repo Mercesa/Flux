@@ -22,7 +22,7 @@ static VkCullModeFlagBits ConvertCullModeToVkCullBit(Flux::CullModes aType)
         break;
 
     default:
-        VkCullModeFlagBits(0);
+        return VkCullModeFlagBits(0);
     }
 }
 
@@ -38,53 +38,7 @@ static VkFrontFace ConvertFrontFaceToVkFaceBit(Flux::FrontFace aType)
         break;
 
     default:
-        VkCullModeFlagBits(0);
-    }
-}
-
-VkShaderStageFlagBits ConvertShaderToVkShaderStageBit(Flux::Gfx::ShaderTypes aType)
-{
-    switch (aType)
-    {
-    case Flux::Gfx::ShaderTypes::eVertex:
-		return VK_SHADER_STAGE_VERTEX_BIT;
-		break;
-	case Flux::Gfx::ShaderTypes::eFragment:
-		return VK_SHADER_STAGE_FRAGMENT_BIT;
-		break;
-	case Flux::Gfx::ShaderTypes::eGeometry:
-		return VK_SHADER_STAGE_GEOMETRY_BIT;
-		break;
-	case Flux::Gfx::ShaderTypes::eTessellationControl:
-		return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-		break;
-	case Flux::Gfx::ShaderTypes::eTessellationEval:
-		return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-		break;
-	case Flux::Gfx::ShaderTypes::eCompute:
-		return VK_SHADER_STAGE_COMPUTE_BIT;
-		break;
-	case Flux::Gfx::ShaderTypes::eRayGen:
-		return VK_SHADER_STAGE_RAYGEN_BIT_KHR;
-		break;
-    case Flux::Gfx::ShaderTypes::eRayMiss:
-        return VK_SHADER_STAGE_MISS_BIT_KHR;
-        break;
-	case Flux::Gfx::ShaderTypes::eRayClosestHit:
-		return VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-		break;
-	case Flux::Gfx::ShaderTypes::eRayAnyHit:
-		return VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
-		break;
-	case Flux::Gfx::ShaderTypes::eRayIntersection:
-		return VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
-		break;
-	case Flux::Gfx::ShaderTypes::eRayCallable:
-		return VK_SHADER_STAGE_CALLABLE_BIT_KHR;
-		break;
-
-    default:
-        VkShaderStageFlagBits(0);
+        return VkFrontFace(0);
     }
 }
 
@@ -172,8 +126,6 @@ static VkPipeline CustomRendererCreateGraphicsPipelineForState(
     colorBlending.blendConstants[2] = 0.0f;
     colorBlending.blendConstants[3] = 0.0f;
 
-
-
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     depthStencil.depthTestEnable = VK_FALSE;
@@ -218,7 +170,6 @@ static VkPipeline CustomRendererCreateGraphicsPipelineForState(
 
 VkPipeline CreateComputePipeline(std::shared_ptr<RenderContext> aContext, VkPipelineLayout pipelineLayout, std::string aShaderPath)
 {
-
     VkPipeline tPipeline;
 
     auto shaderCode = Flux::Common::ReadFile<char>(aShaderPath);

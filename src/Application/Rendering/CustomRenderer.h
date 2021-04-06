@@ -107,12 +107,17 @@ namespace Flux
 
 		VkSampler textureSampler;
 
+
+
+		std::shared_ptr<Flux::Gfx::RootSignature> mRootSignatureSceneObjects;
+
 		VkDescriptorSetLayout descriptorSetLayout;
 
 		VkDescriptorSetLayout descriptorSetLayoutPerObject;
 
 		VkPipelineLayout pipelineLayoutSceneObjects;
 		VkDescriptorSetLayout descriptorSetLayoutSceneObjects;
+
 		std::vector<VkDescriptorSet> descriptorSetsSceneObjects;
 
 
@@ -133,6 +138,7 @@ namespace Flux
 
 		std::vector<std::shared_ptr<VkDescriptorSet>> mSceneSets;
 		std::vector<std::pair<RenderState, VkPipeline>> mPipelines;
+
 
 		std::unique_ptr<RenderingResourceManager> mResourceManager;
 
@@ -206,8 +212,6 @@ namespace Flux
 
 		bool framebufferResized = false;
 
-		//std::shared_ptr<Renderer> mRenderer;
-
 	private:
 
 		void InitVulkan();
@@ -250,8 +254,10 @@ namespace Flux
 		std::shared_ptr<Flux::Gfx::DescriptorPool> mDescriptorPool;
 
 		std::shared_ptr<Flux::Gfx::RenderTarget> mRenderTargetScene;
+
 		std::shared_ptr<Flux::Gfx::RenderTarget> mRenderTargetFinal;
 		std::shared_ptr<Flux::Gfx::RootSignature> mRootSignatureCompute;
+		std::shared_ptr<Flux::Gfx::Shader> mComputeShader;
 
 
 	};

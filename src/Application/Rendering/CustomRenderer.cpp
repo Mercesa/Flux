@@ -48,7 +48,6 @@ Flux::CustomRenderer::CustomRenderer(GLFWwindow* aWindow) : mVsync(true), mWindo
     DescriptorPoolCDesc.maxDescriptorSets = 1024;
 
     mDescriptorPool = Renderer::CreateDescriptorPool(mRenderContext, &DescriptorPoolCDesc);
-
 }
 
 void Flux::CustomRenderer::Init()
@@ -132,50 +131,27 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
 	}
 
 
-    std::shared_ptr<Flux::Gfx::Shader> computeShader = std::make_shared<Flux::Gfx::Shader>();
+
     auto codeCompute = Flux::Common::ReadFile<char>("Resources/Shaders/postfx.comp.spv");
-    computeShader->mReflectionData = ShaderReflection::Reflect(codeCompute);
-    computeShader->mEntryPoint = "main";
-    computeShader->mShadertype = ShaderTypes::eCompute;
+
+    ShaderCreateDesc compShaderCD{};
+    compShaderCD.mCode = codeCompute;
+    compShaderCD.mFilePath = "Resources/Shaders/postfx.comp.spv";
+    compShaderCD.mType = ShaderTypes::eCompute;
+    mComputeShader = Renderer::CreateShader(mRenderContext, &compShaderCD);
 
     RootSignatureCreateDesc rootSigDesc{};
-    rootSigDesc.mShaders.push_back(computeShader);
+    rootSigDesc.mShaders.push_back(mComputeShader);
 
     mRootSignatureCompute = Renderer::CreateRootSignature(mRenderContext, &rootSigDesc);
 
-    // Compute shader
     {
-        //VkDescriptorSetLayoutBinding layoutBindingStorageLayoutBindingRead{};
-        //layoutBindingStorageLayoutBindingRead.binding = 0;
-        //layoutBindingStorageLayoutBindingRead.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        //layoutBindingStorageLayoutBindingRead.descriptorCount = 1;
-        //layoutBindingStorageLayoutBindingRead.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-        //layoutBindingStorageLayoutBindingRead.pImmutableSamplers = nullptr;
-
-        //VkDescriptorSetLayoutBinding layoutBindingStorageLayoutBindingWrite{};
-        //layoutBindingStorageLayoutBindingWrite.binding = 1;
-        //layoutBindingStorageLayoutBindingWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        //layoutBindingStorageLayoutBindingWrite.descriptorCount = 1;
-        //layoutBindingStorageLayoutBindingWrite.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-        //layoutBindingStorageLayoutBindingWrite.pImmutableSamplers = nullptr;
-
-
-        //std::array<VkDescriptorSetLayoutBinding, 2> bindings = { layoutBindingStorageLayoutBindingRead, layoutBindingStorageLayoutBindingWrite };
-        //VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        //layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        //layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        //layoutInfo.pBindings = bindings.data();
-
-        //if (vkCreateDescriptorSetLayout(mRenderContext->mDevice->mDevice, &layoutInfo, nullptr, &mComputeDataPostfx.descriptorSetLayout))
-        //{
-        //    throw std::runtime_error("failed to create descriptor set layout!");
-        //}
 
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = mDescriptorPool->mPool;
         allocInfo.descriptorSetCount = 1u;
-        allocInfo.pSetLayouts = &mRootSignatureCompute->mDescriptorSetLayouts[0];
+        allocInfo.pSetLayouts = mRootSignatureCompute->mDescriptorSetLayouts.data();
 
         if (vkAllocateDescriptorSets(mRenderContext->mDevice->mDevice, &allocInfo, &mComputeDataPostfx.descriptorset) != VK_SUCCESS)
         {
@@ -235,8 +211,6 @@ void CustomRenderer::CustomRenderer::CleanupSwapChain() {
     vkFreeDescriptorSets(mRenderContext->mDevice->mDevice, mDescriptorPool->mPool, descriptorSetsSceneObjects.size(), descriptorSetsSceneObjects.data());
     Renderer::DestroyRenderTarget(mRenderContext, mRenderTargetScene);
     Renderer::DestroyRenderTarget(mRenderContext, mRenderTargetFinal);
-
-
 }
 
 void CustomRenderer::Cleanup() {
@@ -288,9 +262,7 @@ void CustomRenderer::Cleanup() {
 		vmaFreeMemory(this->mRenderContext->memoryAllocator, mUniformBuffersCamera[i]->mAllocation);
 	}
 
-	//vkDestroyDescriptorSetLayout(mRenderContext->mDevice->mDevice, mComputeDataPostfx.descriptorSetLayout, nullptr);
-	//vkDestroyPipeline(mRenderContext->mDevice->mDevice, mComputeDataPostfx.pipeline, nullptr);
-	//vkDestroyPipelineLayout(mRenderContext->mDevice->mDevice, mComputeDataPostfx.pipelineLayout, nullptr);
+    vkDestroyPipeline(mRenderContext->mDevice->mDevice, mComputeDataPostfx.pipeline, nullptr);
 
 	Renderer::DestroyRootSignature(mRenderContext, mRootSignatureCompute);
 
@@ -299,6 +271,8 @@ void CustomRenderer::Cleanup() {
 	Renderer::DestroyDescriptorPool(mRenderContext, mDescriptorPool);
 
 	vkDestroyCommandPool(mRenderContext->mDevice->mDevice, commandPool, nullptr);
+
+    Renderer::DestroyShader(mRenderContext, mComputeShader);
 
     glfwTerminate();
 
@@ -1054,8 +1028,6 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
     vkCmdEndRenderPass(commandBuffers[imageIndex]);
 
-
-
     Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool,
         mRenderTargetScene->mColorImages[0]->mImage, mRenderTargetScene->mColorImages[0]->mFormat,
         VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_GENERAL, 1, commandBuffers[imageIndex]);
@@ -1074,8 +1046,6 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
         (mRenderTargetFinal->mWidth + dispatchSize.x - 1) / dispatchSize.x, // x dispatch
         (mRenderTargetFinal->mHeight + dispatchSize.y - 1) / dispatchSize.y, // y dispatch
         1); // z dispatch
-
-
 
 
     Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderTargetFinal->mColorImages[0]->mImage, mRenderTargetFinal->mColorImages[0]->mFormat,
@@ -1104,10 +1074,6 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 		copy.dstSubresource.layerCount = 1;
 		copy.dstSubresource.baseArrayLayer = 0;
 
-
-	//	Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mSwapchain->mImages[imageIndex], mSwapchain->mImageFormat, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, commandBuffers[imageIndex]);
-
-	//	Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mRenderTargetFinal->mColorImages[0]->mImage, mRenderTargetFinal->mColorImages[0]->mFormat, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, commandBuffers[imageIndex]);
 
 		vkCmdCopyImage(commandBuffers[imageIndex],
             mRenderTargetFinal->mColorImages[0]->mImage, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,

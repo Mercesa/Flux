@@ -115,6 +115,25 @@ std::vector<ShaderResourceReflection> AddResourcesToList(const spirv_cross::Comp
 	return tResourceList;
 }
 
+std::vector<PushConstantReflection> AddPushConstant(const spirv_cross::CompilerGLSL& aCompiler, const spirv_cross::SmallVector<spirv_cross::Resource>& aResources, ShaderResourceType aType, ShaderTypes aShaderStage)
+{
+	std::vector<PushConstantReflection> tPushConstants;
+	tPushConstants.reserve(aResources.size());
+
+	for (const auto& resource : aResources)
+	{
+		PushConstantReflection tPushConstants{};
+		tPushConstants.mShaderAccess = aShaderStage;
+
+		const spirv_cross::SPIRType& type = aCompiler.get_type(resource.base_type_id);
+		tPushConstants.mSize = aCompiler.get_declared_struct_size(type);
+	}
+
+	return tPushConstants;
+}
+
+
+
 ShaderReflectionData Flux::Gfx::ShaderReflection::Reflect(std::vector<char> aSpvbinary)
 {
 	ShaderReflectionData tReflection{};
@@ -192,10 +211,9 @@ ShaderReflectionData Flux::Gfx::ShaderReflection::Reflect(std::vector<char> aSpv
 		tReflection.mResources.insert(tReflection.mResources.end(), tAtomicCounters.begin(), tAtomicCounters.end());
 	}
 
-	// Push constants
+	// Push constants are an exception
 	{
-		auto tPushConstants = AddResourcesToList(glsl, resources.push_constant_buffers, ShaderResourceType::ePushConstantBuffer, tShaderStage);
-		tReflection.mResources.insert(tReflection.mResources.end(), tPushConstants.begin(), tPushConstants.end());
+		tReflection.mPushConstants = AddPushConstant(glsl, resources.push_constant_buffers, ShaderResourceType::ePushConstantBuffer, tShaderStage);
 	}
 
 	// Acceleration structures
@@ -333,4 +351,24 @@ std::vector<ShaderResourceReflection> Flux::Gfx::ShaderReflection::ValidateAndMe
 break_out:
 	return std::vector<ShaderResourceReflection>();
 
+}
+
+std::vector<PushConstantReflection> Flux::Gfx::ShaderReflection::MergeRootConstants(const std::vector<std::shared_ptr<Flux::Gfx::Shader>> aShaders)
+{
+	if (aShaders.size() == 0)
+	{
+		return std::vector<PushConstantReflection>();
+	}
+
+	auto tPushConstants = aShaders[0]->mReflectionData.mPushConstants;
+
+	for (auto& pushConstantBuffer : tPushConstants)
+	{
+		for (auto& shader : aShaders)
+		{
+			pushConstantBuffer.mShaderAccess|= shader->mShadertype;
+		}
+	}
+
+	return tPushConstants;
 }

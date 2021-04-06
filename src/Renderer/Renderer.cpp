@@ -8,6 +8,43 @@ using namespace Flux::Gfx::ShaderReflection;
 
 #include <map>
 
+
+static VkCullModeFlagBits ConvertCullModeToVkCullBit(Flux::Gfx::CullModes aType)
+{
+	switch (aType)
+	{
+	case Flux::Gfx::CullModes::eCullFront:
+		return VK_CULL_MODE_FRONT_BIT;
+		break;
+	case Flux::Gfx::CullModes::eCullBack:
+		return VK_CULL_MODE_BACK_BIT;
+		break;
+	case Flux::Gfx::CullModes::eCullFrontAndBack:
+		return VK_CULL_MODE_FRONT_AND_BACK;
+		break;
+
+	default:
+		VkCullModeFlagBits(0);
+	}
+}
+
+static VkFrontFace ConvertFrontFaceToVkFaceBit(Flux::Gfx::FrontFace aType)
+{
+	switch (aType)
+	{
+	case Flux::Gfx::FrontFace::eCounterClockWise:
+		return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		break;
+	case Flux::Gfx::FrontFace::eClockWise:
+		return VK_FRONT_FACE_CLOCKWISE;
+		break;
+
+	default:
+		VkCullModeFlagBits(0);
+	}
+}
+
+
 inline VkShaderStageFlags ConvertShaderStageToVkStage(ShaderTypes aShaderAccessFlags)
 {
 
@@ -299,8 +336,6 @@ std::shared_ptr<RootSignature> Flux::Gfx::Renderer::CreateRootSignature(std::sha
 	// Combine shader resources (we can do some error checking here)
 	// Create descriptor set layouts and descriptor sets from the root signature
 
-
-
 	// We don't accept root signatures that have 0 shaders
 	if (aRootSignatureDesc->mShaders.size() == 0)
 	{
@@ -311,7 +346,7 @@ std::shared_ptr<RootSignature> Flux::Gfx::Renderer::CreateRootSignature(std::sha
 		for (const auto& shader : aRootSignatureDesc->mShaders)
 		{
 			// Shader is invalid if it doesn't have an entry point and is an unknown type
-			if (shader->mEntryPoint.length() == 0 || shader->mShadertype == ShaderTypes::eUnknownShaderType)
+			if (shader->mReflectionData.mEntryPoint.length() == 0 || shader->mShadertype == ShaderTypes::eUnknownShaderType)
 			{
 				return nullptr;
 			}
@@ -323,6 +358,8 @@ std::shared_ptr<RootSignature> Flux::Gfx::Renderer::CreateRootSignature(std::sha
 
 	// Merge the shader resources from all the shaders
 	tRootSignature->mRootSignatureResources = ShaderReflection::ValidateAndMergeShaderResources(aRootSignatureDesc->mShaders);
+	tRootSignature->mPushConstantBuffers = ShaderReflection::MergeRootConstants(aRootSignatureDesc->mShaders);
+
 
 	// map to hold the descriptors
 	std::map<int32_t, std::vector<Flux::Gfx::ShaderReflection::ShaderResourceReflection>> descriptorMap;
@@ -332,7 +369,7 @@ std::shared_ptr<RootSignature> Flux::Gfx::Renderer::CreateRootSignature(std::sha
 		descriptorMap[shaderResource.mSetNumber].push_back(shaderResource);
 	}
 
-
+	// Go through every set, turn them into vk descriptor set layout bindings
 	for (auto& set : descriptorMap)
 	{
 		std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
@@ -364,9 +401,25 @@ std::shared_ptr<RootSignature> Flux::Gfx::Renderer::CreateRootSignature(std::sha
 		tRootSignature->mDescriptorSetLayouts.push_back(descriptorSetLayout);
 	}
 
+
+	bool tContainsPushConstants = false;
+
+	VkPushConstantRange pushConstantRange{};
+	if (tRootSignature->mPushConstantBuffers.size() != 0)
+	{
+		const auto& pushCb = tRootSignature->mPushConstantBuffers[0];
+
+		pushConstantRange.stageFlags = ConvertShaderStageToVkStage(Flux::Gfx::ShaderTypes(pushCb.mShaderAccess));
+		pushConstantRange.offset = 0;
+		pushConstantRange.size = pushCb.mSize;
+
+		tContainsPushConstants = true;
+	}
+
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.pushConstantRangeCount = 0;
+	pipelineLayoutInfo.pushConstantRangeCount = tContainsPushConstants ? 1 : 0; // TODO hardcoded for now, figure out if multiple push constants are supported yet.
+	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 	pipelineLayoutInfo.setLayoutCount = tRootSignature->mDescriptorSetLayouts.size();
 	pipelineLayoutInfo.pSetLayouts = tRootSignature->mDescriptorSetLayouts.data();
 
@@ -386,6 +439,150 @@ void Flux::Gfx::Renderer::DestroyRootSignature(std::shared_ptr<RenderContext> aR
 	}
 
 	vkDestroyPipelineLayout(aRendererContext->mDevice->mDevice, aRootSignature->mPipelineLayout, nullptr);
+}
+
+std::shared_ptr<Gfx::Shader> Flux::Gfx::Renderer::CreateShader(std::shared_ptr<RenderContext> aContext, const ShaderCreateDesc* const aShaderDesc)
+{
+	std::shared_ptr<Gfx::Shader> tShader = std::make_shared<Gfx::Shader>();
+
+	// Only reflect after the shader module is guarenteed to have succeeded
+	tShader->mReflectionData = ShaderReflection::Reflect(aShaderDesc->mCode);
+	tShader->mFilePath = aShaderDesc->mFilePath;
+	tShader->mShadertype = aShaderDesc->mType; // Could get the type from reflection, have to consider what is best..
+	tShader->mShaderModule = Renderer::CreateShaderModule(aContext->mDevice->mDevice, aShaderDesc->mCode);
+
+	return tShader;
+}
+
+void Flux::Gfx::Renderer::DestroyShader(std::shared_ptr<RenderContext> aContext, std::shared_ptr<Gfx::Shader> aShader)
+{
+	assert(aShader);
+	vkDestroyShaderModule(aContext->mDevice->mDevice, aShader->mShaderModule, nullptr);
+}
+
+std::shared_ptr<Gfx::GraphicsPipeline> Flux::Gfx::Renderer::CreateGraphicsPipeline(std::shared_ptr<RenderContext> aContext, const GraphicsPipelineCreateDesc* const aPipelineDesc)
+{
+	assert(aPipelineDesc);
+	assert(aPipelineDesc->mRasterizer);
+
+	std::shared_ptr<Gfx::GraphicsPipeline> tGraphicsPipeline = std::make_shared<GraphicsPipeline>();
+
+	std::vector<VkPipelineShaderStageCreateInfo> pipelineCreateInfo;
+
+	// Prepare the pipeline stages
+	std::shared_ptr<RootSignature> tRootSig = aPipelineDesc->mRootSig.lock();
+
+	for (auto& e : tRootSig->mShaders)
+	{
+		VkPipelineShaderStageCreateInfo shaderStageInfo{};
+		shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStageInfo.stage = ConvertShaderToVkShaderStageBit(e->mShadertype);
+		shaderStageInfo.module = e->mShaderModule;
+		shaderStageInfo.pName = e->mReflectionData.mEntryPoint.c_str();
+
+		pipelineCreateInfo.push_back(shaderStageInfo);
+	}
+
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+
+	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(aPipelineDesc->vertexAttrDescriptions.size());
+	vertexInputInfo.pVertexBindingDescriptions = &aPipelineDesc->bindingDescription;
+	vertexInputInfo.pVertexAttributeDescriptions = aPipelineDesc->vertexAttrDescriptions.data();
+
+	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+	VkExtent2D viewExtent = { aPipelineDesc->mRt.lock()->mWidth, aPipelineDesc->mRt.lock()->mHeight };
+
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = (float)aPipelineDesc->mRt.lock()->mWidth;
+	viewport.height = (float)aPipelineDesc->mRt.lock()->mHeight;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+
+	VkRect2D scissor{};
+	scissor.offset = { 0, 0 };
+	scissor.extent = viewExtent;
+
+	VkPipelineViewportStateCreateInfo viewportState{};
+	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportState.viewportCount = 1;
+	viewportState.pViewports = &viewport;
+	viewportState.scissorCount = 1;
+	viewportState.pScissors = &scissor;
+
+	VkPipelineRasterizationStateCreateInfo rasterizer{};
+	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizer.depthClampEnable = VK_FALSE;
+	rasterizer.rasterizerDiscardEnable = VK_FALSE;
+	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizer.lineWidth = 1.0f;
+	rasterizer.cullMode = ConvertCullModeToVkCullBit(aPipelineDesc->mRasterizer->cullMode);
+	rasterizer.frontFace = ConvertFrontFaceToVkFaceBit(aPipelineDesc->mRasterizer->frontFaceMode);
+	rasterizer.depthBiasEnable = VK_FALSE;
+
+	VkPipelineMultisampleStateCreateInfo multisampling{};
+	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampling.sampleShadingEnable = VK_FALSE;
+	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.blendEnable = VK_FALSE;
+
+	VkPipelineColorBlendStateCreateInfo colorBlending{};
+	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	colorBlending.logicOpEnable = VK_FALSE;
+	colorBlending.logicOp = VK_LOGIC_OP_COPY;
+	colorBlending.attachmentCount = 1;
+	colorBlending.pAttachments = &colorBlendAttachment;
+	colorBlending.blendConstants[0] = 0.0f;
+	colorBlending.blendConstants[1] = 0.0f;
+	colorBlending.blendConstants[2] = 0.0f;
+	colorBlending.blendConstants[3] = 0.0f;
+
+
+	VkPipelineDepthStencilStateCreateInfo depthStencil{};
+	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	depthStencil.depthTestEnable = VK_TRUE;
+	depthStencil.depthWriteEnable = VK_TRUE;
+	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+	depthStencil.depthBoundsTestEnable = VK_FALSE;
+	depthStencil.minDepthBounds = 0.0f; // Optional
+	depthStencil.maxDepthBounds = 1.0f; // Optional
+	depthStencil.stencilTestEnable = VK_FALSE;
+	depthStencil.front = {}; // Optional
+	depthStencil.back = {}; // Optional
+
+	VkGraphicsPipelineCreateInfo pipelineInfo{};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineInfo.stageCount = pipelineCreateInfo.size();
+	pipelineInfo.pStages = pipelineCreateInfo.data();
+	pipelineInfo.pVertexInputState = &vertexInputInfo;
+	pipelineInfo.pInputAssemblyState = &inputAssembly;
+	pipelineInfo.pViewportState = &viewportState;
+	pipelineInfo.pRasterizationState = &rasterizer;
+	pipelineInfo.pMultisampleState = &multisampling;
+	pipelineInfo.pColorBlendState = &colorBlending;
+	pipelineInfo.pDepthStencilState = &depthStencil;
+	pipelineInfo.layout = tRootSig->mPipelineLayout;
+	pipelineInfo.renderPass = aPipelineDesc->mRt.lock()->mPass;
+	pipelineInfo.subpass = 0;
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+	if (vkCreateGraphicsPipelines(aContext->mDevice->mDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &tGraphicsPipeline->pipeline) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create graphics pipeline!");
+	}
+}
+
+void Flux::Gfx::Renderer::CreateGraphicsPipeline(std::shared_ptr<RenderContext> aContext, std::shared_ptr<Gfx::GraphicsPipeline> aGraphicsPipeline)
+{
 }
 
 
