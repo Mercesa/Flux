@@ -173,6 +173,8 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
     RootSignatureCreateDesc rootSigDesc{};
     rootSigDesc.mShaders.push_back(mComputeShader);
 
+    mShadersAll.push_back(mComputeShader);
+
     mRootSignatureCompute = Renderer::CreateRootSignature(mRenderContext, &rootSigDesc);
 
     {
@@ -263,7 +265,7 @@ void CustomRenderer::Cleanup() {
 
     for (auto rootSig : mRootSignaturesAll)
     {
-        Renderer::DestroyRootSignature(mRenderContext, mRootSignatureSceneObjects);
+        Renderer::DestroyRootSignature(mRenderContext, rootSig);
     }
     mRootSignaturesAll.clear();
 
@@ -272,6 +274,11 @@ void CustomRenderer::Cleanup() {
         Renderer::DestroyGraphicsPipeline(mRenderContext, pipeline.second);
     }
     mPipelines.clear();
+
+    for (auto shader : mShadersAll)
+    {
+        Renderer::DestroyShader(mRenderContext, shader);
+    }
 
     for (auto& buffer : mSceneBuffers)
     {
@@ -312,8 +319,6 @@ void CustomRenderer::Cleanup() {
 	Renderer::DestroyDescriptorPool(mRenderContext, mDescriptorPool);
 
 	vkDestroyCommandPool(mRenderContext->mDevice->mDevice, commandPool, nullptr);
-
-    Renderer::DestroyShader(mRenderContext, mComputeShader);
 
     glfwTerminate();
 
@@ -432,6 +437,7 @@ std::shared_ptr<Flux::Gfx::GraphicsPipeline> Flux::CustomRenderer::CreateGraphic
             shaderCreateDesc.mFilePath = e.second;
             shaderCreateDesc.mType = e.first;
             tShader = Renderer::CreateShader(mRenderContext, &shaderCreateDesc);
+            mShadersAll.push_back(tShader);
         }
         else
         {
@@ -439,7 +445,6 @@ std::shared_ptr<Flux::Gfx::GraphicsPipeline> Flux::CustomRenderer::CreateGraphic
         }
 
         tShaders.push_back(tShader);
-        mShadersAll.push_back(tShader);
     }
 
     auto resultRootQuery = DoesRootSignatureExist(tShaders);

@@ -627,6 +627,9 @@ std::shared_ptr<Gfx::GraphicsPipeline> Flux::Gfx::Renderer::CreateGraphicsPipeli
 
 void Flux::Gfx::Renderer::DestroyGraphicsPipeline(std::shared_ptr<RenderContext> aContext, std::shared_ptr<Gfx::GraphicsPipeline> aGraphicsPipeline)
 {
+	assert(aGraphicsPipeline);
+
+	vkDestroyPipeline(aContext->mDevice->mDevice, aGraphicsPipeline->pipeline, nullptr);
 }
 
 std::shared_ptr<Gfx::ComputePipeline> Flux::Gfx::Renderer::CreateComputePipeline(std::shared_ptr<RenderContext> aContext, const ComputePipelineCreatedesc* const aPipelineDesc)

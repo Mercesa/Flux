@@ -90,7 +90,7 @@ void Flux::FirstScene::Init()
 
 	}
 
-	/*auto tAssetDragon = mAssetManager->LoadModel("Resources\\Models\\Dragon\\dragon.obj");
+	auto tAssetDragon = mAssetManager->LoadModel("Resources\\Models\\Dragon\\dragon.obj");
 
 	for (auto& mesh : tAssetDragon->mMeshes)
 	{
@@ -145,7 +145,7 @@ void Flux::FirstScene::Init()
 
 		this->mSceneObjects.push_back(tSceneObject);
 
-	}*/
+	}
 
 	for (uint32_t y = 0; y < 3; ++y)
 	{

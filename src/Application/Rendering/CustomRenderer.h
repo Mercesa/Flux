@@ -238,8 +238,6 @@ namespace Flux
 
 		GLFWwindow* mWindow;
 
-
-
 	public:
 		std::vector < std::shared_ptr<Flux::Gfx::Shader>> mShadersAll;
 		std::vector<std::shared_ptr<Flux::Gfx::RootSignature>> mRootSignaturesAll;
