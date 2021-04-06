@@ -117,8 +117,7 @@ std::vector<ShaderResourceReflection> AddResourcesToList(const spirv_cross::Comp
 
 std::vector<PushConstantReflection> AddPushConstant(const spirv_cross::CompilerGLSL& aCompiler, const spirv_cross::SmallVector<spirv_cross::Resource>& aResources, ShaderResourceType aType, ShaderTypes aShaderStage)
 {
-	std::vector<PushConstantReflection> tPushConstants;
-	tPushConstants.reserve(aResources.size());
+	std::vector<PushConstantReflection> tPushConstantsVector;
 
 	for (const auto& resource : aResources)
 	{
@@ -127,9 +126,10 @@ std::vector<PushConstantReflection> AddPushConstant(const spirv_cross::CompilerG
 
 		const spirv_cross::SPIRType& type = aCompiler.get_type(resource.base_type_id);
 		tPushConstants.mSize = aCompiler.get_declared_struct_size(type);
+		tPushConstantsVector.push_back(tPushConstants);
 	}
 
-	return tPushConstants;
+	return tPushConstantsVector;
 }
 
 
@@ -360,13 +360,31 @@ std::vector<PushConstantReflection> Flux::Gfx::ShaderReflection::MergeRootConsta
 		return std::vector<PushConstantReflection>();
 	}
 
-	auto tPushConstants = aShaders[0]->mReflectionData.mPushConstants;
+	std::vector<PushConstantReflection> tPushConstants = aShaders[0]->mReflectionData.mPushConstants;
+
+	// Find the shader with the most push constants
+	int pushConstantsSize = 0;
+	for (const auto& shader : aShaders)
+	{
+		const auto& pushcnsts = shader->mReflectionData.mPushConstants;
+
+		if (pushcnsts.size() > pushConstantsSize)
+		{
+			pushConstantsSize = pushcnsts.size();
+			tPushConstants = shader->mReflectionData.mPushConstants;
+		}
+	}
+
 
 	for (auto& pushConstantBuffer : tPushConstants)
 	{
 		for (auto& shader : aShaders)
 		{
-			pushConstantBuffer.mShaderAccess|= shader->mShadertype;
+			// FLUX_TODO this code would break if there would be more than one root constant.
+			if (shader->mReflectionData.mPushConstants.size() != 0)
+			{
+				pushConstantBuffer.mShaderAccess |= shader->mShadertype;
+			}
 		}
 	}
 

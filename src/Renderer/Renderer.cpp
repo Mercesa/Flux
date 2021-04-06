@@ -44,14 +44,75 @@ static VkFrontFace ConvertFrontFaceToVkFaceBit(Flux::Gfx::FrontFace aType)
 	}
 }
 
+static VkCompareOp ConvertCompareOpToVkCompareOp(Flux::Gfx::DepthCompareOp aType)
+{
+	switch (aType)
+	{
+	case Flux::Gfx::DepthCompareOp::eCompareAlways:
+		return VK_COMPARE_OP_ALWAYS;
+		break;
+	case Flux::Gfx::DepthCompareOp::eCompareEqual:
+		return VK_COMPARE_OP_EQUAL;
+		break;
+	case Flux::Gfx::DepthCompareOp::eCompareGreater:
+		return VK_COMPARE_OP_GREATER;
+		break;
+	case Flux::Gfx::DepthCompareOp::eCompareGreaterOrEqual:
+		return VK_COMPARE_OP_GREATER_OR_EQUAL;
+		break;
+	case Flux::Gfx::DepthCompareOp::eCompareLess:
+		return VK_COMPARE_OP_LESS;
+		break;
+	case Flux::Gfx::DepthCompareOp::eCompareLessOrEqual:
+		return VK_COMPARE_OP_LESS_OR_EQUAL;
+		break;
+	case Flux::Gfx::DepthCompareOp::eCompareNever:
+		return VK_COMPARE_OP_NEVER;
+		break;
+	case Flux::Gfx::DepthCompareOp::eCompareNotEqual:
+		return VK_COMPARE_OP_NOT_EQUAL;
+		break;
+	default:
+		return VK_COMPARE_OP_MAX_ENUM; // Erorr basically
+	}
+}
+
+static VkPipelineRasterizationStateCreateInfo CreateRasterInfoFromGenericInfo(Flux::Gfx::RasterizerState state)
+{
+	VkPipelineRasterizationStateCreateInfo rasterizer{};
+	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizer.depthClampEnable = VK_FALSE;
+	rasterizer.rasterizerDiscardEnable = VK_FALSE;
+	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizer.lineWidth = 1.0f;
+	rasterizer.cullMode = ConvertCullModeToVkCullBit(state.cullMode);
+	rasterizer.frontFace = ConvertFrontFaceToVkFaceBit(state.frontFaceMode);
+	rasterizer.depthBiasEnable = VK_FALSE;
+
+	return rasterizer;
+}
+
+static VkPipelineDepthStencilStateCreateInfo CreateDepthStencilInfoFromGenericInfo(Flux::Gfx::DepthStencilState state)
+{
+	VkPipelineDepthStencilStateCreateInfo depthStencil{};
+	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	depthStencil.depthTestEnable = state.depthTestEnable;
+	depthStencil.depthWriteEnable = state.depthWriteEnable;
+	depthStencil.depthCompareOp = ConvertCompareOpToVkCompareOp(state.depthCompareOp);
+	depthStencil.depthBoundsTestEnable = VK_FALSE;
+	depthStencil.minDepthBounds = 0.0f; // Optional
+	depthStencil.maxDepthBounds = 1.0f; // Optional
+	depthStencil.stencilTestEnable = VK_FALSE;
+	depthStencil.front = {}; // Optional
+	depthStencil.back = {}; // Optional
+
+	return depthStencil;
+}
 
 inline VkShaderStageFlags ConvertShaderStageToVkStage(ShaderTypes aShaderAccessFlags)
 {
-
 	uint32_t shaderFlags = VkShaderStageFlags(0);
 
-	switch (aShaderAccessFlags)
-	{
 	if(aShaderAccessFlags & eVertex)
 		shaderFlags |= VK_SHADER_STAGE_VERTEX_BIT;
 	if(aShaderAccessFlags & eFragment)
@@ -76,12 +137,11 @@ inline VkShaderStageFlags ConvertShaderStageToVkStage(ShaderTypes aShaderAccessF
 		shaderFlags |= VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
 	if(aShaderAccessFlags & eRayCallable)
 		shaderFlags |= VK_SHADER_STAGE_CALLABLE_BIT_KHR;
-	default:
-		return VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
-	}
+
 
 	return VkShaderStageFlags(shaderFlags);
 }
+
 
 inline VkDescriptorType ConvertShaderResourceToDescriptorType(ShaderResourceType aResourceFlags)
 {
@@ -355,6 +415,7 @@ std::shared_ptr<RootSignature> Flux::Gfx::Renderer::CreateRootSignature(std::sha
 
 	std::shared_ptr<RootSignature> tRootSignature = std::make_shared<RootSignature>();
 
+	tRootSignature->mShaders.insert(tRootSignature->mShaders.begin(), aRootSignatureDesc->mShaders.begin(), aRootSignatureDesc->mShaders.end());
 
 	// Merge the shader resources from all the shaders
 	tRootSignature->mRootSignatureResources = ShaderReflection::ValidateAndMergeShaderResources(aRootSignatureDesc->mShaders);
@@ -463,9 +524,9 @@ void Flux::Gfx::Renderer::DestroyShader(std::shared_ptr<RenderContext> aContext,
 std::shared_ptr<Gfx::GraphicsPipeline> Flux::Gfx::Renderer::CreateGraphicsPipeline(std::shared_ptr<RenderContext> aContext, const GraphicsPipelineCreateDesc* const aPipelineDesc)
 {
 	assert(aPipelineDesc);
-	assert(aPipelineDesc->mRasterizer);
 
 	std::shared_ptr<Gfx::GraphicsPipeline> tGraphicsPipeline = std::make_shared<GraphicsPipeline>();
+	tGraphicsPipeline->mRootSignature = aPipelineDesc->mRootSig;
 
 	std::vector<VkPipelineShaderStageCreateInfo> pipelineCreateInfo;
 
@@ -517,16 +578,6 @@ std::shared_ptr<Gfx::GraphicsPipeline> Flux::Gfx::Renderer::CreateGraphicsPipeli
 	viewportState.scissorCount = 1;
 	viewportState.pScissors = &scissor;
 
-	VkPipelineRasterizationStateCreateInfo rasterizer{};
-	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	rasterizer.depthClampEnable = VK_FALSE;
-	rasterizer.rasterizerDiscardEnable = VK_FALSE;
-	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-	rasterizer.lineWidth = 1.0f;
-	rasterizer.cullMode = ConvertCullModeToVkCullBit(aPipelineDesc->mRasterizer->cullMode);
-	rasterizer.frontFace = ConvertFrontFaceToVkFaceBit(aPipelineDesc->mRasterizer->frontFaceMode);
-	rasterizer.depthBiasEnable = VK_FALSE;
-
 	VkPipelineMultisampleStateCreateInfo multisampling{};
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampling.sampleShadingEnable = VK_FALSE;
@@ -548,17 +599,8 @@ std::shared_ptr<Gfx::GraphicsPipeline> Flux::Gfx::Renderer::CreateGraphicsPipeli
 	colorBlending.blendConstants[3] = 0.0f;
 
 
-	VkPipelineDepthStencilStateCreateInfo depthStencil{};
-	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	depthStencil.depthTestEnable = VK_TRUE;
-	depthStencil.depthWriteEnable = VK_TRUE;
-	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-	depthStencil.depthBoundsTestEnable = VK_FALSE;
-	depthStencil.minDepthBounds = 0.0f; // Optional
-	depthStencil.maxDepthBounds = 1.0f; // Optional
-	depthStencil.stencilTestEnable = VK_FALSE;
-	depthStencil.front = {}; // Optional
-	depthStencil.back = {}; // Optional
+	VkPipelineRasterizationStateCreateInfo rasterizer = CreateRasterInfoFromGenericInfo(aPipelineDesc->mRasterizer);
+	VkPipelineDepthStencilStateCreateInfo depthStencil = CreateDepthStencilInfoFromGenericInfo(aPipelineDesc->mDepthStencilState);
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -579,10 +621,42 @@ std::shared_ptr<Gfx::GraphicsPipeline> Flux::Gfx::Renderer::CreateGraphicsPipeli
 	if (vkCreateGraphicsPipelines(aContext->mDevice->mDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &tGraphicsPipeline->pipeline) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}
+
+	return tGraphicsPipeline;
 }
 
-void Flux::Gfx::Renderer::CreateGraphicsPipeline(std::shared_ptr<RenderContext> aContext, std::shared_ptr<Gfx::GraphicsPipeline> aGraphicsPipeline)
+void Flux::Gfx::Renderer::DestroyGraphicsPipeline(std::shared_ptr<RenderContext> aContext, std::shared_ptr<Gfx::GraphicsPipeline> aGraphicsPipeline)
 {
 }
 
+std::shared_ptr<Gfx::ComputePipeline> Flux::Gfx::Renderer::CreateComputePipeline(std::shared_ptr<RenderContext> aContext, const ComputePipelineCreatedesc* const aPipelineDesc)
+{
+	assert(aPipelineDesc);
+	assert(aPipelineDesc->mRootSig.lock());
 
+	std::shared_ptr<Gfx::ComputePipeline> tComputePipeline = std::make_shared<Gfx::ComputePipeline>();
+	tComputePipeline->mRootSignature = aPipelineDesc->mRootSig;
+	const auto tRootSignature = tComputePipeline->mRootSignature.lock();
+
+	assert(tRootSignature->mShaders.size() == 1);
+
+	VkPipelineShaderStageCreateInfo shaderStageInfo{};
+	shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+	shaderStageInfo.module = tRootSignature->mShaders[0]->mShaderModule;
+	shaderStageInfo.pName = tRootSignature->mShaders[0]->mReflectionData.mEntryPoint.c_str();
+
+	VkComputePipelineCreateInfo pipelineInfo{};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+	pipelineInfo.stage = shaderStageInfo;
+	pipelineInfo.layout = tRootSignature->mPipelineLayout;
+
+	vkCreateComputePipelines(aContext->mDevice->mDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &tComputePipeline->computePipeline);
+
+	return tComputePipeline;
+}
+
+void Flux::Gfx::Renderer::DestroyComputePipeline(std::shared_ptr<RenderContext> aContext, std::shared_ptr<Gfx::ComputePipeline> aComputePipeline)
+{
+	vkDestroyPipeline(aContext->mDevice->mDevice, aComputePipeline->computePipeline, nullptr);
+}
