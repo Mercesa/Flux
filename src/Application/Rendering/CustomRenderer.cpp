@@ -29,6 +29,40 @@ static void check_vk_result(VkResult err)
         abort();
 }
 
+
+static std::vector<VkVertexInputAttributeDescription> CreateSceneVertexAttributes()
+{
+    std::vector<VkVertexInputAttributeDescription> vertexAttrDescriptions;
+    vertexAttrDescriptions.resize(5);
+
+    vertexAttrDescriptions[0].binding = 0;
+    vertexAttrDescriptions[0].location = 0;
+    vertexAttrDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexAttrDescriptions[0].offset = offsetof(VertexData, position);
+
+    vertexAttrDescriptions[1].binding = 0;
+    vertexAttrDescriptions[1].location = 1;
+    vertexAttrDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+    vertexAttrDescriptions[1].offset = offsetof(VertexData, texCoords);
+
+    vertexAttrDescriptions[2].binding = 0;
+    vertexAttrDescriptions[2].location = 2;
+    vertexAttrDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexAttrDescriptions[2].offset = offsetof(VertexData, normal);
+
+    vertexAttrDescriptions[3].binding = 0;
+    vertexAttrDescriptions[3].location = 3;
+    vertexAttrDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexAttrDescriptions[3].offset = offsetof(VertexData, tangent);
+
+    vertexAttrDescriptions[4].binding = 0;
+    vertexAttrDescriptions[4].location = 4;
+    vertexAttrDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexAttrDescriptions[4].offset = offsetof(VertexData, bitangent);
+
+    return vertexAttrDescriptions;
+}
+
 Flux::CustomRenderer::CustomRenderer(GLFWwindow* aWindow) : mVsync(true), mWindow(aWindow)
 {
     mRenderContext = Renderer::CreateRenderContext("Flux", true, mWindow);
@@ -128,10 +162,6 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
 
     mRootSignaturesAll.push_back(mRootSignatureScene);
 
-    CreateDescriptorSets();
-    CreateCommandBuffers();
-    CreateSyncObjects();
-
     {
         Flux::Gfx::RenderTargetCreateDesc RTCreateDescScene{};
         RTCreateDescScene.mWidth = mSwapchain->mExtent.width;
@@ -223,8 +253,72 @@ void CustomRenderer::CustomRenderer::InitVulkan() {
         mComputePipeline = Renderer::CreateComputePipeline(mRenderContext, &computePipelineCreateDesc);
     }
 
+    // Depth only pass
+    {
+        // Root sig and shaders
+        auto codeDepth = Flux::Common::ReadFile<char>("Resources/Shaders/simpleDepth.vert.spv");
+
+        Gfx::ShaderCreateDesc depthShaderCreateDesc{};
+        depthShaderCreateDesc.mCode = codeDepth;
+        depthShaderCreateDesc.mFilePath = "Resources/Shaders/simpleDepth.vert.spv";
+        depthShaderCreateDesc.mType = ShaderTypes::eVertex;
+
+        auto tDepthShader = Renderer::CreateShader(mRenderContext, &depthShaderCreateDesc);
+
+        mShadersAll.push_back(tDepthShader);
+
+        RootSignatureCreateDesc rootSigDesc{};
+        rootSigDesc.mShaders.push_back(tDepthShader);
+
+        mDepthOnlypass.mRootSignatureDepthOnly = Renderer::CreateRootSignature(mRenderContext, &rootSigDesc);
+
+        // Render target
+        Flux::Gfx::RenderTargetCreateDesc RTCreateDesc{};
+        RTCreateDesc.mWidth = 8096;
+        RTCreateDesc.mHeight = 8096;
+        RTCreateDesc.mDepthTarget = { VK_FORMAT_D32_SFLOAT };
+        mDepthOnlypass.mRenderTargetDepth = Renderer::CreateRenderTarget(mRenderContext, mRenderContext->mDevice, mQueueGraphics, commandPool, mRenderContext->memoryAllocator, &RTCreateDesc);
+
+        // Pipeline
+        std::vector vertexAttributes = CreateSceneVertexAttributes();
+        VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+
+        VkVertexInputBindingDescription bindingDescription{};
+        bindingDescription.binding = 0;
+        bindingDescription.stride = sizeof(VertexData);
+        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertexInputInfo.vertexBindingDescriptionCount = 1;
+        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttributes.size());
+        vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+        vertexInputInfo.pVertexAttributeDescriptions = vertexAttributes.data();
 
 
+        Gfx::GraphicsPipelineCreateDesc pipeCreateDesc{};
+        pipeCreateDesc.mRootSig = mDepthOnlypass.mRootSignatureDepthOnly;
+        pipeCreateDesc.mRt = mDepthOnlypass.mRenderTargetDepth;
+        pipeCreateDesc.mPushConstantSize = sizeof(glm::mat4);
+        pipeCreateDesc.vertexAttrDescriptions = vertexAttributes;
+        pipeCreateDesc.bindingDescription = bindingDescription;
+
+        pipeCreateDesc.mDepthStencilState.depthCompareOp = DepthCompareOp::eCompareLess;
+        // pipeCreateDesc.mRasterizer.cullMode = Gfx::CullModes::eCullFront;
+        mDepthOnlypass.mGraphicsPipeline = Renderer::CreateGraphicsPipeline(mRenderContext, &pipeCreateDesc);
+    }
+
+    CreateDescriptorSets();
+    CreateCommandBuffers();
+    CreateSyncObjects();
+}
+
+void Flux::CustomRenderer::SetupQueryPool()
+{
+    VkQueryPoolCreateInfo queryPoolInfo = {};
+    queryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+    queryPoolInfo.queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
+    queryPoolInfo.queryCount = 1;
+    vkCreateQueryPool(mRenderContext->mDevice->mDevice, &queryPoolInfo, NULL, &mQueryPool);
 }
 
 void CustomRenderer::CustomRenderer::MainLoop() {
@@ -319,6 +413,8 @@ void CustomRenderer::Cleanup() {
 	Renderer::DestroyDescriptorPool(mRenderContext, mDescriptorPool);
 
 	vkDestroyCommandPool(mRenderContext->mDevice->mDevice, commandPool, nullptr);
+
+    vkDestroyQueryPool(mRenderContext->mDevice->mDevice, mQueryPool, nullptr);
 
     glfwTerminate();
 
@@ -499,6 +595,7 @@ std::shared_ptr<Flux::Gfx::GraphicsPipeline> Flux::CustomRenderer::CreateGraphic
     vertexAttrDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
     vertexAttrDescriptions[4].offset = offsetof(VertexData, bitangent);
 
+
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttrDescriptions.size());
@@ -582,12 +679,38 @@ void CustomRenderer::CreateTextureSampler()
     if (vkCreateSampler(mRenderContext->mDevice->mDevice, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
+
+    {
+        VkSamplerCreateInfo samplerInfo{};
+        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.magFilter = VK_FILTER_NEAREST;
+        samplerInfo.minFilter = VK_FILTER_NEAREST;
+        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerInfo.anisotropyEnable = VK_FALSE;
+        samplerInfo.maxAnisotropy = 0.0f;
+        samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        samplerInfo.unnormalizedCoordinates = VK_FALSE;
+        samplerInfo.compareEnable = VK_FALSE;
+        samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        samplerInfo.mipLodBias = 0.0f;
+        samplerInfo.minLod = 0.0f;
+        samplerInfo.maxLod = 0.0f;
+
+        if (vkCreateSampler(mRenderContext->mDevice->mDevice, &samplerInfo, nullptr, &pointSampler) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create texture sampler!");
+        }
+    }
+
 }
 
 void CustomRenderer::CreateUniformBuffers()
 {
     mUniformBuffersCamera.resize(mSwapchain->mImages.size());
     mLightData.mUniformBuffersLights.resize(mSwapchain->mImages.size());
+    mDepthOnlypass.mBufferDepthTransformation.resize(mSwapchain->mImages.size());
 
     for (size_t i = 0; i < mSwapchain->mImages.size(); i++)
     {
@@ -600,58 +723,156 @@ void CustomRenderer::CreateUniformBuffers()
             mLightData.mUniformBuffersLights[i] = std::make_shared<BufferGPU>();
             Renderer::CreateBuffer(mRenderContext->mDevice->mDevice, mRenderContext->memoryAllocator, sizeof(UniformBufferLights) * AMOUNT_OF_SUPPORTED_LIGHTS, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, mLightData.mUniformBuffersLights[i]->mBuffer, mLightData.mUniformBuffersLights[i]->mAllocation);
         }
+
+        // Depth pass for shadows
+        {
+            mDepthOnlypass.mBufferDepthTransformation[i] = std::make_shared<BufferGPU>();
+            Renderer::CreateBuffer(mRenderContext->mDevice->mDevice, mRenderContext->memoryAllocator, sizeof(glm::mat4), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_CPU_TO_GPU, mDepthOnlypass.mBufferDepthTransformation[i]->mBuffer, mDepthOnlypass.mBufferDepthTransformation[i]->mAllocation);
+        }
     }
 }
 
 void CustomRenderer::CreateDescriptorSets()
 {
-    std::vector<VkDescriptorSetLayout> layouts(mSwapchain->mImages.size(), mRootSignatureScene->mDescriptorSetLayouts[0]);
-    VkDescriptorSetAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = mDescriptorPool->mPool;
-    allocInfo.descriptorSetCount = static_cast<uint32_t>(mSwapchain->mImages.size());
-    allocInfo.pSetLayouts = layouts.data();
 
-    descriptorSetsSceneObjects.resize(mSwapchain->mImages.size());
-    if (vkAllocateDescriptorSets(mRenderContext->mDevice->mDevice, &allocInfo, descriptorSetsSceneObjects.data()) != VK_SUCCESS)
     {
-        throw std::runtime_error("Failed to allcoate descriptor sets!");
+        std::vector<VkDescriptorSetLayout> layouts(mSwapchain->mImages.size(), mRootSignatureScene->mDescriptorSetLayouts[0]);
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = mDescriptorPool->mPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(mSwapchain->mImages.size());
+        allocInfo.pSetLayouts = layouts.data();
+
+        descriptorSetsSceneObjects.resize(mSwapchain->mImages.size());
+        if (vkAllocateDescriptorSets(mRenderContext->mDevice->mDevice, &allocInfo, descriptorSetsSceneObjects.data()) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to allcoate descriptor sets!");
+        }
+
+        for (size_t i = 0; i < mSwapchain->mImages.size(); i++)
+        {
+            VkDescriptorBufferInfo bufferInfoCamera{};
+            bufferInfoCamera.buffer = mUniformBuffersCamera[i]->mBuffer;
+            bufferInfoCamera.offset = 0;
+            bufferInfoCamera.range = sizeof(CustomRenderer::UniformBufferCamera);
+
+            VkDescriptorBufferInfo bufferInfoLight;
+            bufferInfoLight.buffer = mLightData.mUniformBuffersLights[i]->mBuffer;
+            bufferInfoLight.offset = 0;
+            bufferInfoLight.range = sizeof(Light) * AMOUNT_OF_SUPPORTED_LIGHTS;
+
+            std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[0].dstSet = descriptorSetsSceneObjects[i];
+            descriptorWrites[0].dstBinding = 0;
+            descriptorWrites[0].dstArrayElement = 0;
+            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[0].descriptorCount = 1;
+            descriptorWrites[0].pBufferInfo = &bufferInfoCamera;
+
+            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[1].dstSet = descriptorSetsSceneObjects[i];
+            descriptorWrites[1].dstBinding = 1;
+            descriptorWrites[1].dstArrayElement = 0;
+            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[1].descriptorCount = 1;
+            descriptorWrites[1].pBufferInfo = &bufferInfoLight;
+
+
+
+            vkUpdateDescriptorSets(mRenderContext->mDevice->mDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        }
     }
 
-    for (size_t i = 0; i < mSwapchain->mImages.size(); i++)
     {
-        VkDescriptorBufferInfo bufferInfoCamera{};
-        bufferInfoCamera.buffer = mUniformBuffersCamera[i]->mBuffer;
-        bufferInfoCamera.offset = 0;
-        bufferInfoCamera.range = sizeof(CustomRenderer::UniformBufferCamera);
+        std::vector<VkDescriptorSetLayout> layouts(mSwapchain->mImages.size(), mRootSignatureScene->mDescriptorSetLayouts[2]);
 
-        VkDescriptorBufferInfo bufferInfoLight;
-		bufferInfoLight.buffer = mLightData.mUniformBuffersLights[i]->mBuffer;
-		bufferInfoLight.offset = 0;
-		bufferInfoLight.range = sizeof(Light) * AMOUNT_OF_SUPPORTED_LIGHTS;
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = mDescriptorPool->mPool;
+        allocInfo.descriptorSetCount = mSwapchain->mImages.size();
+        allocInfo.pSetLayouts = layouts.data();
 
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+        mDepthOnlypass.descriptorSet.resize(mSwapchain->mImages.size());
 
-        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = descriptorSetsSceneObjects[i];
-        descriptorWrites[0].dstBinding = 0;
-        descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrites[0].descriptorCount = 1;
-        descriptorWrites[0].pBufferInfo = &bufferInfoCamera;
+        if (vkAllocateDescriptorSets(mRenderContext->mDevice->mDevice, &allocInfo, mDepthOnlypass.descriptorSet.data()) != VK_SUCCESS)
+        {
+            throw "Failed to allocate descriptor set";
+        }
 
-        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[1].dstSet = descriptorSetsSceneObjects[i];
-        descriptorWrites[1].dstBinding = 1;
-        descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrites[1].descriptorCount = 1;
-        descriptorWrites[1].pBufferInfo = &bufferInfoLight;
+        for (size_t i = 0; i < mSwapchain->mImages.size(); i++)
+        {
+            VkDescriptorBufferInfo bufferInfoLight{};
+            bufferInfoLight.buffer = mDepthOnlypass.mBufferDepthTransformation[i]->mBuffer;
+            bufferInfoLight.offset = 0;
+            bufferInfoLight.range = sizeof(glm::mat4);
+
+            std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[0].dstSet = mDepthOnlypass.descriptorSet[i];
+            descriptorWrites[0].dstBinding = 0;
+            descriptorWrites[0].dstArrayElement = 0;
+            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[0].descriptorCount = 1;
+            descriptorWrites[0].pBufferInfo = &bufferInfoLight;
+
+            VkDescriptorImageInfo imageInfoShadow{};
+            imageInfoShadow.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfoShadow.imageView = mDepthOnlypass.mRenderTargetDepth->mDepthImage->mView;
+
+            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[1].dstSet = mDepthOnlypass.descriptorSet[i];
+            descriptorWrites[1].dstBinding = 1;
+            descriptorWrites[1].dstArrayElement = 0;
+            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            descriptorWrites[1].descriptorCount = 1;
+            descriptorWrites[1].pImageInfo = &imageInfoShadow;
 
 
 
-        vkUpdateDescriptorSets(mRenderContext->mDevice->mDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+            vkUpdateDescriptorSets(mRenderContext->mDevice->mDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        }
     }
+    {
+        std::vector<VkDescriptorSetLayout> layouts(mSwapchain->mImages.size(), mDepthOnlypass.mRootSignatureDepthOnly->mDescriptorSetLayouts[0]);
+
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = mDescriptorPool->mPool;
+        allocInfo.descriptorSetCount = mSwapchain->mImages.size();
+        allocInfo.pSetLayouts = layouts.data();
+
+        mDepthOnlypass.descriptorSetShadowTexture.resize(mSwapchain->mImages.size());
+
+        if (vkAllocateDescriptorSets(mRenderContext->mDevice->mDevice, &allocInfo, mDepthOnlypass.descriptorSetShadowTexture.data()) != VK_SUCCESS)
+        {
+            throw "Failed to allocate descriptor set";
+        }
+
+        for (size_t i = 0; i < mSwapchain->mImages.size(); i++)
+        {
+            VkDescriptorBufferInfo bufferInfoLight{};
+            bufferInfoLight.buffer = mDepthOnlypass.mBufferDepthTransformation[i]->mBuffer;
+            bufferInfoLight.offset = 0;
+            bufferInfoLight.range = sizeof(glm::mat4);
+
+            std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+
+            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[0].dstSet = mDepthOnlypass.descriptorSetShadowTexture[i];
+            descriptorWrites[0].dstBinding = 0;
+            descriptorWrites[0].dstArrayElement = 0;
+            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[0].descriptorCount = 1;
+            descriptorWrites[0].pBufferInfo = &bufferInfoLight;
+
+            vkUpdateDescriptorSets(mRenderContext->mDevice->mDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        }
+    }
+
+
 }
 
 void CustomRenderer::CreateCommandBuffers() {
@@ -693,6 +914,7 @@ void CustomRenderer::CreateSyncObjects() {
 void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
     // Imgui start
+    static int frame = -1;
 
     {
         // Start the Dear ImGui frame
@@ -824,7 +1046,10 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
                 VkDescriptorImageInfo samplerInfo{};
                 samplerInfo.sampler = textureSampler;
 
-				std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
+                VkDescriptorImageInfo samplerInfoShadow{};
+                samplerInfoShadow.sampler = pointSampler;
+
+				std::array<VkWriteDescriptorSet, 5> descriptorWrites{};
 
 				descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				descriptorWrites[0].dstSet = mSet[0];
@@ -857,6 +1082,14 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 				descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
 				descriptorWrites[3].descriptorCount = 1;
                 descriptorWrites[3].pImageInfo = &samplerInfo;
+
+                descriptorWrites[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrites[4].dstSet = mSet[0];
+                descriptorWrites[4].dstBinding = 4;
+                descriptorWrites[4].dstArrayElement = 0;
+                descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+                descriptorWrites[4].descriptorCount = 1;
+                descriptorWrites[4].pImageInfo = &samplerInfoShadow;
 
 				vkUpdateDescriptorSets(mRenderContext->mDevice->mDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
                 object->mMaterial->mDescriptorSet = mSet[0];
@@ -906,6 +1139,73 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
         throw std::runtime_error("failed to begin recording command buffer!");
     }
 
+    if (frame >= 2)
+    {
+        Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool,
+            mDepthOnlypass.mRenderTargetDepth->mDepthImage->mImage, mDepthOnlypass.mRenderTargetDepth->mDepthImage->mFormat,
+            VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, 1, commandBuffers[imageIndex], VK_IMAGE_ASPECT_DEPTH_BIT);
+    }
+
+    // Depth pass
+    {
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = mDepthOnlypass.mRenderTargetDepth->mPass;
+		renderPassInfo.framebuffer = mDepthOnlypass.mRenderTargetDepth->mFramebuffer;
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = { 8096, 8096 };
+
+        std::array<VkClearValue, 1> clearValues{};
+        clearValues[0].depthStencil = { 1.0f, 0 };
+
+        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+        renderPassInfo.pClearValues = clearValues.data();
+
+		vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, mDepthOnlypass.mGraphicsPipeline->pipeline);
+
+		for (auto& object : aScene->GetSceneObjects())
+		{
+			// If object contains no render state, can not render.
+			if (!object->mRenderState.stateID.has_value())
+			{
+				continue;
+			}
+
+			if (!QueryPipeline(object->mRenderState))
+			{
+				object->mRenderState.stateID = std::nullopt;
+				continue;
+			}
+
+
+			std::vector<VkDescriptorSet> objectSets = { mDepthOnlypass.descriptorSetShadowTexture[imageIndex] };
+			vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, mDepthOnlypass.mRootSignatureDepthOnly->mPipelineLayout, 0, objectSets.size(), objectSets.data(), 0, nullptr);
+
+			VkBuffer vertexBuffers[] = { object->mMesh->mVertexBuffer->mBuffer };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
+			vkCmdBindIndexBuffer(commandBuffers[imageIndex], object->mMesh->mIndexBuffer->mBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdPushConstants(
+				commandBuffers[imageIndex],
+				mDepthOnlypass.mRootSignatureDepthOnly->mPipelineLayout,
+				VK_SHADER_STAGE_VERTEX_BIT,
+				0,
+				sizeof(glm::mat4),
+				&object->transform);
+
+			vkCmdDrawIndexed(commandBuffers[imageIndex], static_cast<uint32_t>(object->mAsset->mIndices.size()), 1, 0, 0, 0);
+		}
+    }
+
+    vkCmdEndRenderPass(commandBuffers[imageIndex]);
+
+    Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool,
+        mDepthOnlypass.mRenderTargetDepth->mDepthImage->mImage, mDepthOnlypass.mRenderTargetDepth->mDepthImage->mFormat,
+        VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, commandBuffers[imageIndex], VK_IMAGE_ASPECT_DEPTH_BIT);
+
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = mRenderTargetScene->mPass;
@@ -921,9 +1221,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
     renderPassInfo.pClearValues = clearValues.data();
 
 
-    static int frame = -1;
 
-    frame++;
 
     if (frame <= 2)
     {
@@ -958,7 +1256,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
 
         vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, this->mPipelines[object->mRenderState.stateID.value()].second->pipeline);
-        std::vector<VkDescriptorSet> objectSets = { descriptorSetsSceneObjects[imageIndex], object->mMaterial->mDescriptorSet };
+        std::vector<VkDescriptorSet> objectSets = { descriptorSetsSceneObjects[imageIndex], object->mMaterial->mDescriptorSet, mDepthOnlypass.descriptorSet[imageIndex] };
         vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, this->mPipelines[object->mRenderState.stateID.value()].second->mRootSignature.lock()->mPipelineLayout, 0, objectSets.size(), objectSets.data(), 0, nullptr);
 
         VkBuffer vertexBuffers[] = { object->mMesh->mVertexBuffer->mBuffer };
@@ -1039,7 +1337,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
     for (uint32_t i = 0; i < aScene->GetLights().size(); ++i)
     {
 
-        ImGui::SliderFloat3("Position", glm::value_ptr(aScene->GetLights()[i]->position), 0.0f, 10.0);            // Edit 1 float using a slider from 0.0f to 1.0f
+        ImGui::SliderFloat3("Position", glm::value_ptr(aScene->GetLights()[i]->position), -50.0f, 50.0);            // Edit 1 float using a slider from 0.0f to 1.0f
         ImGui::Separator();
     }
 
@@ -1122,6 +1420,7 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
         throw std::runtime_error("failed to present swap chain image!");
     }
 
+    frame++;
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
@@ -1148,6 +1447,47 @@ void CustomRenderer::UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<
     vmaMapMemory(mRenderContext->memoryAllocator, mUniformBuffersCamera[currentImage]->mAllocation, &data);
     memcpy(data, &ubo, sizeof(ubo));
     vmaUnmapMemory(mRenderContext->memoryAllocator, mUniformBuffersCamera[currentImage]->mAllocation);
+
+
+    {
+
+        static float near_plane = -200.0f, far_plane = 200.0, x = 0, y = 0, z = 0, left = -100.0f, right = 100.0f, top = -100.0f, bottom = 100.0f;
+
+        ImGui::Begin("Directional");                          // Create a window called "Hello, world!" and append into it.
+
+		ImGui::SliderFloat("near", &near_plane, -200.0f, 200.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+        ImGui::SliderFloat("far", &far_plane, 0.0f, 200.0);            // Edit 1 float using a slider from 0.0f to 1.0f
+
+
+        ImGui::SliderFloat("top", &top, -100.0f, 100.0);            // Edit 1 float using a slider from 0.0f to 1.0f
+        ImGui::SliderFloat("bottom", &bottom, -100.0f, 100.0);            // Edit 1 float using a slider from 0.0f to 1.0f
+        ImGui::SliderFloat("left", &left, -100.0f, 100.0);            // Edit 1 float using a slider from 0.0f to 1.0f
+        ImGui::SliderFloat("right", &right, -100.0f, 100.0);            // Edit 1 float using a slider from 0.0f to 1.0f
+
+        ImGui::SliderFloat("x", &x, -10.0f, 10.0);            // Edit 1 float using a slider from 0.0f to 1.0f
+        ImGui::SliderFloat("y", &y, -10.0f, 10.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+        ImGui::SliderFloat("z", &z, -10.0f, 10.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+
+		ImGui::Separator();
+
+
+
+        ImGui::End();
+
+
+        glm::mat4 lightProjection = glm::ortho(left, right, top, bottom, near_plane, far_plane);
+        float texelSize = 1.0f / 4096;
+        glm::mat4 lightView = glm::lookAt(glm::vec3(0),
+            glm::vec3(0) + glm::normalize(glm::vec3(aLights[0]->position)),
+            glm::vec3(0.0f, 1.0f, 0.0f));
+
+        glm::mat4 directionalLight = lightProjection * lightView;
+        void* data;
+        vmaMapMemory(mRenderContext->memoryAllocator, mDepthOnlypass.mBufferDepthTransformation[currentImage]->mAllocation, &data);
+        memcpy(data, &directionalLight, sizeof(glm::mat4));
+        vmaUnmapMemory(mRenderContext->memoryAllocator, mDepthOnlypass.mBufferDepthTransformation[currentImage]->mAllocation);
+    }
+
 
 
 

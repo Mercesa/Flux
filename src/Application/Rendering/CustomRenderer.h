@@ -105,6 +105,7 @@ namespace Flux
 		std::shared_ptr<Flux::Gfx::Texture> mEmptyTexture;
 
 		VkSampler textureSampler;
+		VkSampler pointSampler;
 
 
 
@@ -212,6 +213,8 @@ namespace Flux
 
 		void InitVulkan();
 
+		void SetupQueryPool();
+
 		void MainLoop();
 
 		void CleanupSwapChain();
@@ -257,6 +260,22 @@ namespace Flux
 
 
 		std::shared_ptr<Gfx::RootSignature> mRootSignatureScene;
+
+		struct DepthOnlyPass
+		{
+			std::shared_ptr<Gfx::RootSignature> mRootSignatureDepthOnly;
+			std::shared_ptr<Gfx::GraphicsPipeline> mGraphicsPipeline;
+			std::shared_ptr<Gfx::RenderTarget> mRenderTargetDepth;
+			std::vector<std::shared_ptr<Flux::Gfx::BufferGPU>> mBufferDepthTransformation;
+			std::vector<VkDescriptorSet> descriptorSet;
+			std::vector<VkDescriptorSet> descriptorSetShadowTexture;
+
+
+		}mDepthOnlypass;
+
+
+		VkQueryPool mQueryPool;
+
 	};
 
 }

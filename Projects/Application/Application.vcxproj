@@ -206,6 +206,7 @@
     <None Include="Resources\Shaders\cube.frag" />
     <None Include="Resources\Shaders\cube.vert" />
     <None Include="Resources\Shaders\postfx.comp" />
+    <None Include="Resources\Shaders\simpleDepth.vert" />
     <None Include="Resources\Shaders\sphere.frag" />
     <None Include="Resources\Shaders\sphere.vert" />
     <None Include="Resources\Shaders\triangle.frag" />

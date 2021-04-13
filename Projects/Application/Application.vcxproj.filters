@@ -189,5 +189,8 @@
     <None Include="Resources\Shaders\postfx.comp">
       <Filter>Resources\Shaders</Filter>
     </None>
+    <None Include="Resources\Shaders\simpleDepth.vert">
+      <Filter>Resources\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

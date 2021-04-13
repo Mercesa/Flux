@@ -172,7 +172,9 @@ namespace Flux
 
 			static void TransitionImageLayout(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 
-			static void TransitionImageLayout(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, VkCommandBuffer aBuffer);
+			static void TransitionImageLayout(VkDevice aDevice, VkQueue aQueue, VkCommandPool aCmdPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, VkCommandBuffer aBuffer, VkImageAspectFlagBits aspectFlag = VK_IMAGE_ASPECT_COLOR_BIT);
+
+
 
 			static void CreateBuffer(VkDevice aDevice, VmaAllocator aAllocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage properties, VkBuffer& buffer, VmaAllocation& bufferMemory);
 
@@ -1171,7 +1173,7 @@ namespace Flux
 						CreateTexture(aRendererContext, aDevice->mDevice, aQueue->mVkQueue, aPool, aAllocator, aRenderTargetDesc->mWidth, aRenderTargetDesc->mHeight, 1, aRenderTargetDesc->mDepthTarget.value().format, VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR, VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT));*/
 
 					Renderer::CreateImage(aRendererContext, aRenderTargetDesc->mWidth, aRenderTargetDesc->mHeight, depthFormat,
-						VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY,
+						VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY,
 						tDepthTexture->mImage, tDepthTexture->mAllocation, 1);
 					tDepthTexture->mView = Renderer::CreateImageView(aRendererContext, tDepthTexture->mImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 					tDepthTexture->mFormat = depthFormat;
@@ -1206,11 +1208,11 @@ namespace Flux
 					depthAttachment.format = depthFormat;
 					depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 					depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-					depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-					depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-					depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+					depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+					depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+					depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
 					depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-					depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+					depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL; // FLUX_TODO add support dor depth stencil as final layout
 					tAttachments.push_back(depthAttachment);
 				}
 
