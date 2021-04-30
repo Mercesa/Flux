@@ -453,15 +453,22 @@ namespace Flux
 					queueCreateInfos.push_back(queueCreateInfo);
 				}
 
+				VkPhysicalDevicePerformanceQueryFeaturesKHR queryFeatures{};
+				queryFeatures.performanceCounterMultipleQueryPools = VK_TRUE;
+				queryFeatures.performanceCounterQueryPools = VK_TRUE;
+				queryFeatures.pNext = nullptr;
+				queryFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR;
 
 				VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures stencilFeatures{};
 				stencilFeatures.separateDepthStencilLayouts = VK_TRUE;
 				stencilFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES;
-				stencilFeatures.pNext = nullptr;
+				stencilFeatures.pNext = &queryFeatures;
 
 				VkPhysicalDeviceFeatures2KHR features{};
 				features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
 				features.features.samplerAnisotropy = VK_TRUE;
+				features.features.pipelineStatisticsQuery = VK_TRUE;
+				features.features.occlusionQueryPrecise = VK_TRUE;
 				features.pNext = &stencilFeatures;
 
 				VkDeviceCreateInfo createInfo{};
@@ -839,8 +846,6 @@ namespace Flux
 					VkAttachmentReference ref;
 					ref.attachment = 0;
 					ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-
 
 					VkSubpassDescription subpass{};
 					subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;

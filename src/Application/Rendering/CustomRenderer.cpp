@@ -82,6 +82,10 @@ Flux::CustomRenderer::CustomRenderer(GLFWwindow* aWindow) : mVsync(true), mWindo
     DescriptorPoolCDesc.maxDescriptorSets = 1024;
 
     mDescriptorPool = Renderer::CreateDescriptorPool(mRenderContext, &DescriptorPoolCDesc);
+
+    mRenderDataPipeline.pipelineStats.resize(mRenderDataPipeline.pipelineStatNames.size());
+
+    SetupQueryPool();
 }
 
 void Flux::CustomRenderer::Init()
@@ -318,6 +322,15 @@ void Flux::CustomRenderer::SetupQueryPool()
     queryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
     queryPoolInfo.queryType = VK_QUERY_TYPE_PIPELINE_STATISTICS;
     queryPoolInfo.queryCount = 1;
+    queryPoolInfo.pipelineStatistics = VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT |
+        VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT;
+
     vkCreateQueryPool(mRenderContext->mDevice->mDevice, &queryPoolInfo, NULL, &mQueryPool);
 }
 
@@ -351,6 +364,7 @@ void CustomRenderer::Cleanup() {
 
 
     vkDestroySampler(mRenderContext->mDevice->mDevice, textureSampler, nullptr);
+    vkDestroySampler(mRenderContext->mDevice->mDevice, pointSampler, nullptr);
 
     vkDestroyImageView(mRenderContext->mDevice->mDevice, mEmptyTexture->mView, nullptr);
     vkDestroyImage(mRenderContext->mDevice->mDevice, mEmptyTexture->mImage, nullptr);
@@ -407,6 +421,22 @@ void CustomRenderer::Cleanup() {
 
     Renderer::DestroyComputePipeline(mRenderContext, mComputePipeline);
 	Renderer::DestroyRootSignature(mRenderContext, mRootSignatureCompute);
+
+
+    Renderer::DestroyRootSignature(mRenderContext, mDepthOnlypass.mRootSignatureDepthOnly);
+    Renderer::DestroyGraphicsPipeline(mRenderContext, mDepthOnlypass.mGraphicsPipeline);
+    Renderer::DestroyRenderTarget(mRenderContext, mDepthOnlypass.mRenderTargetDepth);
+
+    vkFreeDescriptorSets(mRenderContext->mDevice->mDevice, mDescriptorPool->mPool, mDepthOnlypass.descriptorSet.size(), mDepthOnlypass.descriptorSet.data());
+
+    vkFreeDescriptorSets(mRenderContext->mDevice->mDevice, mDescriptorPool->mPool, mDepthOnlypass.descriptorSetShadowTexture.size(), mDepthOnlypass.descriptorSetShadowTexture.data());
+
+    for (auto& buffer : mDepthOnlypass.mBufferDepthTransformation)
+    {
+        vkDestroyBuffer(mRenderContext->mDevice->mDevice, buffer->mBuffer, nullptr);
+        vmaFreeMemory(mRenderContext->memoryAllocator, buffer->mAllocation);
+    }
+
 
 	vkFreeCommandBuffers(mRenderContext->mDevice->mDevice, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
@@ -703,7 +733,6 @@ void CustomRenderer::CreateTextureSampler()
             throw std::runtime_error("failed to create texture sampler!");
         }
     }
-
 }
 
 void CustomRenderer::CreateUniformBuffers()
@@ -913,9 +942,13 @@ void CustomRenderer::CreateSyncObjects() {
 
 void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
-    // Imgui start
+    VmaStats stats{};
+
+    vmaCalculateStats(mRenderContext->memoryAllocator, &stats);
+
     static int frame = -1;
 
+    // Imgui start
     {
         // Start the Dear ImGui frame
         ImGui_ImplVulkan_NewFrame();
@@ -1139,6 +1172,11 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
         throw std::runtime_error("failed to begin recording command buffer!");
     }
 
+    vkCmdResetQueryPool(commandBuffers[imageIndex], mQueryPool, 0, 1);
+
+
+
+    vkCmdBeginQuery(commandBuffers[imageIndex], mQueryPool, 0, 0);
     if (frame >= 2)
     {
         Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool,
@@ -1202,6 +1240,9 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
     vkCmdEndRenderPass(commandBuffers[imageIndex]);
 
+
+
+
     Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool,
         mDepthOnlypass.mRenderTargetDepth->mDepthImage->mImage, mDepthOnlypass.mRenderTargetDepth->mDepthImage->mFormat,
         VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, commandBuffers[imageIndex], VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -1219,9 +1260,6 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
-
-
-
 
     if (frame <= 2)
     {
@@ -1332,6 +1370,8 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 		// Transition swapchain to present
 		Renderer::TransitionImageLayout(mRenderContext->mDevice->mDevice, mQueueGraphics->mVkQueue, commandPool, mSwapchain->mImages[imageIndex], mSwapchain->mImageFormat, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 1, commandBuffers[imageIndex]);
 	}
+    vkCmdEndQuery(commandBuffers[imageIndex], mQueryPool, 0);
+
 
     ImGui::Begin("Lights");                          // Create a window called "Hello, world!" and append into it.
     for (uint32_t i = 0; i < aScene->GetLights().size(); ++i)
@@ -1344,8 +1384,36 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
 
     ImGui::End();
 
+
+    ImGui::Begin("Render stats");
+
+    ImGui::Spacing();
+
+    ImGui::TextColored(ImVec4(1, 1, 0, 1), "Pipeline stats");
+
+    for (int i = 0; i < mRenderDataPipeline.pipelineStatNames.size(); ++i)
+    {
+        std::string text = mRenderDataPipeline.pipelineStatNames[i] + std::to_string(mRenderDataPipeline.pipelineStats[i]);
+        ImGui::Text(text.c_str());
+    }
+
+    ImGui::TextColored(ImVec4(1, 1, 0, 1), "Memory stats");
+
+    std::string tUnusedMb = "Unused MB: " + std::to_string(stats.total.unusedBytes / 1024 / 1024);
+    std::string tUsedMb = "Used MB: " + std::to_string(stats.total.usedBytes / 1024 / 1024);
+    std::string tTotalAllocatedObject = "Amt allocations: " + std::to_string(stats.total.allocationCount);
+
+
+    ImGui::Text(tUnusedMb.c_str());
+    ImGui::Text(tUsedMb.c_str());
+    ImGui::Text(tTotalAllocatedObject.c_str());
+
+    ImGui::End();
+
     // Rendering
     ImGui::Render();
+
+
 
 
     VkClearValue clearValuesImgui{};
@@ -1397,6 +1465,8 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
     if (vkQueueSubmit(mQueueGraphics->mVkQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
+
+    GetQueryResults();
 
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -1476,6 +1546,9 @@ void CustomRenderer::UpdateUniformBuffer(uint32_t currentImage, std::shared_ptr<
 
 
         glm::mat4 lightProjection = glm::ortho(left, right, top, bottom, near_plane, far_plane);
+        lightProjection[1][1] *= -1.0f;
+        lightProjection[3][2] *= 0.5f;
+
         float texelSize = 1.0f / 4096;
         glm::mat4 lightView = glm::lookAt(glm::vec3(0),
             glm::vec3(0) + glm::normalize(glm::vec3(aLights[0]->position)),

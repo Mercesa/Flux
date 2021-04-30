@@ -86,6 +86,39 @@ namespace Flux
 			Light lightCache[AMOUNT_OF_SUPPORTED_LIGHTS];
 		};
 
+		struct RenderDataQuery
+		{
+			std::vector<uint64_t> pipelineStats;
+			std::vector<std::string> pipelineStatNames
+			{
+				"Input assembly vertex count        ",
+				"Input assembly primitives count        ",
+				"Vertex shader invocation        ",
+				"Clipping stage primitives processed        ",
+				"Clipping stage primitives output        ",
+				"Fragment shader invocations        ",
+				"Tess. control shader patches        ",
+				"Tess. eval. shader invocations        "
+			};
+		} mRenderDataPipeline;
+
+		void GetQueryResults()
+		{
+			// We use vkGetQueryResults to copy the results into a host visible buffer
+			vkGetQueryPoolResults(
+				mRenderContext->mDevice->mDevice,
+				mQueryPool,
+				0,
+				1,
+				sizeof(uint64_t) * mRenderDataPipeline.pipelineStats.size(),
+				mRenderDataPipeline.pipelineStats.data(),
+				sizeof(uint64_t),
+				// Store results a 64 bit values and wait until the results have been finished
+				// If you don't want to wait, you can use VK_QUERY_RESULT_WITH_AVAILABILITY_BIT
+				// which also returns the state of the result (ready) in the result
+				VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+		}
+
 		LightData mLightData;
 
 		struct ComputeDataPostfx
@@ -260,6 +293,7 @@ namespace Flux
 
 
 		std::shared_ptr<Gfx::RootSignature> mRootSignatureScene;
+
 
 		struct DepthOnlyPass
 		{
