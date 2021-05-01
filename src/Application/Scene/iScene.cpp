@@ -23,3 +23,8 @@ const std::vector<std::shared_ptr<Light>> Flux::iScene::GetLights() const
 {
 	return mLights;
 }
+
+const double Flux::iScene::GetDelta()
+{
+	return mDelta;
+}

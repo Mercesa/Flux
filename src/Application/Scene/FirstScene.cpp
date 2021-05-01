@@ -176,6 +176,8 @@ void Flux::FirstScene::Init()
 
 void Flux::FirstScene::Update(float aDt)
 {
+	mDelta = aDt;
+
 	if (mInput->GetKeyHeld(GLFW_KEY_W))
 	{
 		mCamera->ProcessKeyboard(Flux::Camera_Movement::FORWARD, aDt);

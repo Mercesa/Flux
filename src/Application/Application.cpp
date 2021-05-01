@@ -98,13 +98,9 @@ void Flux::Application::Run()
 	mRenderer->SetWindow(mWindow);
 	mRenderer->Init();
 
-
-
 	std::shared_ptr<Timer> tTimer = std::make_shared<Timer>();
 	tTimer->Reset();
 	float tDeltaTime = 0.0f;
-
-	//ImGuiIO& io = ImGui::GetIO();
 
 
 	mScene->Init();

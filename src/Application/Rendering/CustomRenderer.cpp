@@ -63,7 +63,7 @@ static std::vector<VkVertexInputAttributeDescription> CreateSceneVertexAttribute
     return vertexAttrDescriptions;
 }
 
-Flux::CustomRenderer::CustomRenderer(GLFWwindow* aWindow) : mVsync(true), mWindow(aWindow)
+Flux::CustomRenderer::CustomRenderer(GLFWwindow* aWindow) : mVsync(false), mWindow(aWindow)
 {
     mRenderContext = Renderer::CreateRenderContext("Flux", true, mWindow);
     mSwapchain = Renderer::CreateSwapChain(mRenderContext, mWindow );
@@ -1407,6 +1407,13 @@ void CustomRenderer::Draw(const std::shared_ptr<iScene> aScene) {
     ImGui::Text(tUnusedMb.c_str());
     ImGui::Text(tUsedMb.c_str());
     ImGui::Text(tTotalAllocatedObject.c_str());
+
+
+    ImGui::TextColored(ImVec4(1, 1, 0, 1), "Timings stats");
+
+    std::string tCpuMsText = "Cpu ms: " + std::to_string(aScene->GetDelta());
+
+    ImGui::Text(tCpuMsText.c_str());
 
     ImGui::End();
 

@@ -25,7 +25,7 @@ namespace Flux
 		const std::shared_ptr<Camera> GetCamera() const;
 		const std::vector<std::shared_ptr<iSceneObject>> GetSceneObjects() const;
 		const std::vector<std::shared_ptr<Light>> GetLights() const;
-
+		const double GetDelta();
 
 	protected:
 		std::shared_ptr<Camera> mCamera;
@@ -33,6 +33,7 @@ namespace Flux
 		std::vector<std::shared_ptr<iSceneObject>> mSceneObjects;
 		std::shared_ptr<AssetManager> mAssetManager;
 		std::vector<std::shared_ptr<Light>> mLights;
+		double mDelta;
 
 	};
 }
